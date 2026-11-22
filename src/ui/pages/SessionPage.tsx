@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { checkAnswer } from '../../domain/checkAnswer'
 import { applyResultToState, pointsFor, recordSession } from '../../domain/progress'
 import type { Exercise } from '../../domain/sessionEngine'
-import { createRunner, runnerReducer } from '../../domain/sessionRunner'
+import { createRunner, runnerReducer, type RunnerPhase } from '../../domain/sessionRunner'
 import type { SessionMode, VerbItem } from '../../domain/types'
 import { useApp } from '../state/AppContext'
 
@@ -31,6 +31,11 @@ export default function SessionPage() {
   const [shake, setShake] = useState(false)
   const [typingInputs, setTypingInputs] = useState<string[]>([])
   const finishCalledRef = useRef(false)
+  const answerLockRef = useRef(false)
+
+  useEffect(() => {
+    answerLockRef.current = false
+  }, [runner.index])
 
   const exercise = exercises[runner.index]
 
@@ -80,22 +85,31 @@ export default function SessionPage() {
     update((s) => applyResultToState(s, exercise.itemId, ok, new Date().toISOString()))
   }
 
-  const onFlashAnswer = (ok: boolean) => {
-    record(ok)
-    dispatch({ type: 'answer', ok })
+  const tryAnswer = (expectedPhase: RunnerPhase, fn: () => void) => {
+    if (answerLockRef.current || runner.phase !== expectedPhase || runner.finished) return
+    answerLockRef.current = true
+    fn()
   }
 
-  const onQcm = (choice: string) => {
-    const ok = checkAnswer(choice, exercise.expected[0])
-    record(ok)
-    dispatch({ type: 'submit', ok, expected: exercise.expected })
-  }
+  const onFlashAnswer = (ok: boolean) =>
+    tryAnswer('revealed', () => {
+      record(ok)
+      dispatch({ type: 'answer', ok })
+    })
 
-  const onTyping = () => {
-    const ok = exercise.expected.every((exp, i) => checkAnswer(typingInputs[i] ?? '', exp))
-    record(ok)
-    dispatch({ type: 'submit', ok, expected: exercise.expected })
-  }
+  const onQcm = (choice: string) =>
+    tryAnswer('ask', () => {
+      const ok = checkAnswer(choice, exercise.expected[0])
+      record(ok)
+      dispatch({ type: 'submit', ok, expected: exercise.expected })
+    })
+
+  const onTyping = () =>
+    tryAnswer('ask', () => {
+      const ok = exercise.expected.every((exp, i) => checkAnswer(typingInputs[i] ?? '', exp))
+      record(ok)
+      dispatch({ type: 'submit', ok, expected: exercise.expected })
+    })
 
   const verbItem = exercise.listType === 'verbs-en'
     ? (state.lists.find((l) => l.id === exercise.listId)?.items[exercise.itemId] as VerbItem | undefined)
