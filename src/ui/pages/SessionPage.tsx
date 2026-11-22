@@ -4,7 +4,7 @@ import { checkAnswer } from '../../domain/checkAnswer'
 import { applyResultToState, pointsFor, recordSession } from '../../domain/progress'
 import type { Exercise } from '../../domain/sessionEngine'
 import { createRunner, runnerReducer, type RunnerPhase } from '../../domain/sessionRunner'
-import type { SessionMode, VerbItem } from '../../domain/types'
+import type { SessionMode } from '../../domain/types'
 import { useApp } from '../state/AppContext'
 
 interface SessionLocationState {
@@ -14,7 +14,7 @@ interface SessionLocationState {
 }
 
 export default function SessionPage() {
-  const { state, update } = useApp()
+  const { update } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const session = (location.state ?? null) as SessionLocationState | null
@@ -111,10 +111,6 @@ export default function SessionPage() {
       dispatch({ type: 'submit', ok, expected: exercise.expected, input: [...typingInputs] })
     })
 
-  const verbItem = exercise.listType === 'verbs-en'
-    ? (state.lists.find((l) => l.id === exercise.listId)?.items[exercise.itemId] as VerbItem | undefined)
-    : undefined
-
   return (
     <section className={`card exercise-card ${shake ? 'shake' : ''}`} data-testid="exercise-card">
       <div className="btn-row" style={{ justifyContent: 'space-between' }}>
@@ -189,9 +185,6 @@ export default function SessionPage() {
               />
             </label>
           ))}
-          {verbItem && exercise.given && (
-            <p className="muted">Donné : {Object.entries(exercise.given).map(([k, v]) => `${k} = ${v}`).join(', ')}</p>
-          )}
           <div className="btn-row">
             <button className="btn" data-testid="btn-submit" onClick={onTyping}>Valider</button>
           </div>

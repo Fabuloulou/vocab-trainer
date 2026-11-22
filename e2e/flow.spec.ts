@@ -67,6 +67,36 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
 
   await page.getByTestId('nav-home').click()
   await expect(page.getByTestId('stat-streak')).toContainText('1')
+
+  await expect(page.getByTestId('start-weak')).toBeEnabled()
+  await page.getByTestId('start-weak').click()
+  await expect(page.getByTestId('exercise-card')).toBeVisible()
+})
+
+test('refus de créer ou renommer une sous-liste avec un nom déjà utilisé dans la liste', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => window.localStorage.clear())
+  await page.reload()
+  await page.getByTestId('nav-listes').click()
+  await page.getByTestId('delete-examples').click()
+  await page.getByTestId('import-type').selectOption('vocab-en')
+  await page.getByTestId('import-listname').fill('Test sous-listes')
+  await page.getByTestId('import-textarea').fill('fr;trad;liste\nle chat;a cat;L1\nle chien;a dog;L1\n')
+  await page.getByTestId('btn-preview').click()
+  await page.getByTestId('btn-commit-import').click()
+
+  await page.locator('[data-testid^="new-sub-"]').fill('L2')
+  await page.locator('[data-testid^="create-sub-"]').click()
+  await page.locator('[data-testid^="sublist-"]').nth(1).waitFor()
+
+  await page.locator('[data-testid^="new-sub-"]').fill('l2')
+  await page.locator('[data-testid^="create-sub-"]').click()
+  await expect(page.locator('[data-testid^="sub-error-"]').first()).toContainText('déjà utilisé')
+
+  await page.locator('[data-testid^="rename-sub-"]').first().fill('L2')
+  await page.locator('[data-testid^="export-list-"]').first().click()
+  await expect(page.locator('[data-testid^="rename-error-"]').first()).toContainText('déjà utilisé')
+  await expect(page.locator('[data-testid^="rename-sub-"]').first()).toHaveValue('L1')
 })
 
 test('double clic rapide sur un QCM applique la progression Leitner une seule fois', async ({ page }) => {

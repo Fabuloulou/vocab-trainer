@@ -20,6 +20,18 @@ function slugify(name: string): string {
   return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'export'
 }
 
+export type SubNameCheck = 'ok' | 'empty' | 'same-as-list' | 'duplicate'
+
+export function checkSubName(list: WordList, name: string, excludeSubListId: string | null = null): SubNameCheck {
+  const normalized = name.trim().toLocaleLowerCase('fr')
+  if (!normalized) return 'empty'
+  if (normalized === list.name.trim().toLocaleLowerCase('fr')) return 'same-as-list'
+  if (list.subLists.some((s) => s.id !== excludeSubListId && s.name.trim().toLocaleLowerCase('fr') === normalized)) {
+    return 'duplicate'
+  }
+  return 'ok'
+}
+
 export default function ListsPage() {
   const { state, update } = useApp()
   const [type, setType] = useState<ListType>('vocab-en')
@@ -72,25 +84,27 @@ export default function ListsPage() {
     update((s) => ({ ...s, lists: s.lists.filter((l) => !l.isExample) }))
   }
 
-  const createSubList = (listId: string, name: string) => {
-    const trimmed = name.trim()
+  const createSubList = (listId: string, name: string): SubNameCheck => {
     const list = state.lists.find((l) => l.id === listId)
-    if (!trimmed || !list) return false
-    if (trimmed.toLocaleLowerCase('fr') === list.name.trim().toLocaleLowerCase('fr')) return false
+    if (!list) return 'empty'
+    const check = checkSubName(list, name)
+    if (check !== 'ok') return check
+    const trimmed = name.trim()
     update((s) => ({
       ...s,
       lists: s.lists.map((l) =>
         l.id === listId ? { ...l, subLists: [...l.subLists, { id: newId('sub'), name: trimmed, itemIds: [] }] } : l,
       ),
     }))
-    return true
+    return 'ok'
   }
 
-  const renameSubList = (listId: string, subListId: string, name: string) => {
-    const trimmed = name.trim()
+  const renameSubList = (listId: string, subListId: string, name: string): SubNameCheck => {
     const list = state.lists.find((l) => l.id === listId)
-    if (!trimmed || !list) return
-    if (trimmed.toLocaleLowerCase('fr') === list.name.trim().toLocaleLowerCase('fr')) return
+    if (!list) return 'empty'
+    const check = checkSubName(list, name, subListId)
+    if (check !== 'ok') return check
+    const trimmed = name.trim()
     update((s) => ({
       ...s,
       lists: s.lists.map((l) =>
@@ -99,6 +113,7 @@ export default function ListsPage() {
           : l,
       ),
     }))
+    return 'ok'
   }
 
   const deleteSubList = (listId: string, subListId: string) => {
@@ -280,8 +295,8 @@ function ListCard(props: {
   onExportAll: () => void
   onExportSub: (subId: string, subName: string) => void
   onDeleteList: () => void
-  onCreateSub: (name: string) => boolean
-  onRenameSub: (subId: string, name: string) => void
+  onCreateSub: (name: string) => SubNameCheck
+  onRenameSub: (subId: string, name: string) => SubNameCheck
   onDeleteSub: (subId: string) => void
   onMoveItem: (itemId: string, target: string) => void
   onDeleteItem: (itemId: string) => void
@@ -289,15 +304,34 @@ function ListCard(props: {
   const { list } = props
   const [newSubName, setNewSubName] = useState('')
   const [subError, setSubError] = useState('')
+  const [renameError, setRenameError] = useState('')
   const total = Object.keys(list.items).length
 
+  const SUB_ERROR_MESSAGES: Record<SubNameCheck, string> = {
+    ok: '',
+    empty: 'Donne un nom à la sous-liste.',
+    'same-as-list': 'Le nom de la sous-liste doit être différent du nom de la liste (ex. « Leçon 1 »).',
+    duplicate: 'Ce nom est déjà utilisé par une autre sous-liste de cette liste.',
+  }
+
   const handleCreateSub = () => {
-    const ok = props.onCreateSub(newSubName)
-    if (ok) {
+    const result = props.onCreateSub(newSubName)
+    if (result === 'ok') {
       setNewSubName('')
       setSubError('')
     } else {
-      setSubError('Donne un nom de sous-liste différent du nom de la liste (ex. « Leçon 1 »).')
+      setSubError(SUB_ERROR_MESSAGES[result])
+    }
+  }
+
+  const handleRenameSub = (subId: string, currentName: string, value: string, input: HTMLInputElement) => {
+    if (!value.trim() || value === currentName) return
+    const result = props.onRenameSub(subId, value.trim())
+    if (result !== 'ok') {
+      input.value = currentName
+      setRenameError(SUB_ERROR_MESSAGES[result])
+    } else {
+      setRenameError('')
     }
   }
 
@@ -322,13 +356,14 @@ function ListCard(props: {
               type="text"
               defaultValue={sub.name}
               data-testid={`rename-sub-${sub.id}`}
-              onBlur={(e) => { if (e.target.value.trim() && e.target.value !== sub.name) props.onRenameSub(sub.id, e.target.value.trim()) }}
+              onBlur={(e) => handleRenameSub(sub.id, sub.name, e.target.value, e.target)}
               style={{ maxWidth: '220px' }}
             />
             <span className="muted">{sub.itemIds.length} mot(s)</span>
             <button className="btn secondary small" data-testid={`export-sub-${sub.id}`} onClick={() => props.onExportSub(sub.id, sub.name)}>⬇ CSV</button>
             <button className="btn danger small" data-testid={`delete-sub-${sub.id}`} onClick={() => props.onDeleteSub(sub.id)}>Supprimer</button>
           </div>
+          {renameError && <p className="error-text" data-testid={`rename-error-${list.id}`}>{renameError}</p>}
           <div>
             {sub.itemIds.map((id) => (
               <span className="word-chip" key={id}>

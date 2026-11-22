@@ -6,7 +6,7 @@ export type ExerciseKind = 'flashcard' | 'qcm' | 'typing'
 export type Direction = 'fr-to-target' | 'target-to-fr'
 export type VerbField = 'fr' | 'infinitive' | 'preterite' | 'pastParticiple'
 
-export const VERB_FIELDS: VerbField[] = ['fr', 'infinitive', 'preterite', 'pastParticiple']
+export const VERB_FIELDS: VerbField[] = ['infinitive', 'preterite', 'pastParticiple', 'fr']
 
 export interface Exercise {
   index: number
@@ -46,10 +46,10 @@ function vocabFields(item: VocabItem, direction: Direction): { prompt: string; a
 }
 
 export const VERB_LABELS: Record<VerbField, string> = {
-  fr: 'Infinitif (FR)',
-  infinitive: 'Infinitif (EN)',
+  infinitive: 'Infinitif (anglais)',
   preterite: 'Prétérit',
   pastParticiple: 'Participe passé',
+  fr: 'Traduction (français)',
 }
 
 function verbPrompt(item: VerbItem, givenField: VerbField): string {
@@ -109,19 +109,24 @@ export function buildSession(options: BuildSessionOptions): Exercise[] {
     lists.map((l) => [l.id, [...Object.values(l.items)]]),
   )
 
-  const picked: { item: Item; list: WordList }[] = []
-  const seen = new Set<string>()
-  for (const sel of selection) {
-    const list = listById.get(sel.listId)
-    if (!list) continue
-    const subList = list.subLists.find((s) => s.id === sel.subListId)
-    const ids = subList ? subList.itemIds : sel.subListId === '__unclassified__' ? list.unclassifiedItemIds : []
-    for (const id of ids) {
-      if (seen.has(id)) continue
-      const item = list.items[id]
-      if (!item) continue
-      seen.add(id)
-      picked.push({ item, list })
+  let picked: { item: Item; list: WordList }[]
+  if (weakOnly) {
+    picked = lists.flatMap((list) => Object.values(list.items).map((item) => ({ item, list })))
+  } else {
+    picked = []
+    const seen = new Set<string>()
+    for (const sel of selection) {
+      const list = listById.get(sel.listId)
+      if (!list) continue
+      const subList = list.subLists.find((s) => s.id === sel.subListId)
+      const ids = subList ? subList.itemIds : sel.subListId === '__unclassified__' ? list.unclassifiedItemIds : []
+      for (const id of ids) {
+        if (seen.has(id)) continue
+        const item = list.items[id]
+        if (!item) continue
+        seen.add(id)
+        picked.push({ item, list })
+      }
     }
   }
 

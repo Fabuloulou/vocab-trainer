@@ -54,12 +54,12 @@ L'export produit exactement ce format (par liste ou par sous-liste).
 
 ## Fonctionnement
 
-- **Sessions** : coche une ou plusieurs sous-listes (ou « Mes mots faibles » = boîtes Leitner 1-2), lance.
+- **Sessions** : coche une ou plusieurs sous-listes, regroupées par liste sur l'accueil (case « tout cocher » par liste), ou « Mes mots faibles » (boîtes Leitner 1-2). L'entraînement pioche uniquement les mots des sous-listes cochées.
   Mécanismes mélangés aléatoirement : flashcard, QCM (distracteurs pris dans la même liste) et saisie clavier.
-  Vocabulaire interrogé dans les deux directions ; verbes : un des 4 champs donné, les 3 autres à saisir.
+  Vocabulaire interrogé dans les deux directions ; verbes irréguliers : le prompt part **toujours de l'infinitif** (EN ou FR au hasard), les 3 autres champs (prétérit, participe passé, traduction) sont à saisir.
   Un même mot n'apparaît qu'une fois par session.
 - **Correction** : insensible à la casse, stricte sur les accents/umlauts (`groß` ≠ `gross`).
-  La bonne réponse s'affiche en cas d'erreur.
+  En cas d'erreur, la saisie erronée (barrée) et la réponse attendue s'affichent côte à côte.
 - **Leitner 4 boîtes** : réussite = monte d'une boîte, échec = redescend. Tirage priorisant les boîtes basses.
 - **Motivation** : +10 points par bonne réponse (+5 bonus en mode défi chronométré), streak sur jours
   calendaires (fuseau Europe/Paris), maîtrise % par liste, historique des 10 dernières sessions.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from './rng'
-import { buildSession, VERB_FIELDS, type Exercise, type VerbField } from './sessionEngine'
+import { buildSession, VERB_FIELDS, VERB_LABELS, type Exercise, type VerbField } from './sessionEngine'
 import type { LeitnerState, VerbItem, WordList } from './types'
 
 function makeVocabList(id: string, words: [string, string][]): WordList {
@@ -101,6 +101,10 @@ describe('moteur de session', () => {
       expect(askedFields).toContain('preterite')
       expect(askedFields).toContain('pastParticiple')
       expect(e.expected).toEqual(askedFields.map((f) => verb[f]))
+      expect(e.labels).toEqual(askedFields.map((f) => VERB_LABELS[f]))
+      const canonicalOrder = ['infinitive', 'preterite', 'pastParticiple', 'fr'] as const
+      const positions = askedFields.map((f) => canonicalOrder.indexOf(f))
+      expect(positions).toEqual([...positions].sort((a, b) => a - b))
       expect(e.given?.[givenFields[0]]).toBe(verb[givenFields[0]])
       expect(e.prompt).toContain(verb[givenFields[0]])
     }
@@ -157,6 +161,20 @@ describe('moteur de session', () => {
     })
     expect(ex).toHaveLength(3)
     expect(ex.every((e) => leitner[e.itemId].box <= 2)).toBe(true)
+  })
+
+  it('"mots faibles" sans sélection cochée pioche les boîtes 1-2 de toutes les listes', () => {
+    const l1 = makeVocabList('l1', [['a', 'x'], ['b', 'y']])
+    const l2 = makeVocabList('l2', [['c', 'z'], ['d', 'w']])
+    l2.subLists[0].id = 'l2-s1'
+    const leitner: Record<string, LeitnerState> = {
+      'l1-w0': { box: 1, lastSeenAt: null },
+      'l1-w1': { box: 4, lastSeenAt: null },
+      'l2-w0': { box: 2, lastSeenAt: null },
+      'l2-w1': { box: 3, lastSeenAt: null },
+    }
+    const ex = buildSession({ lists: [l1, l2], selection: [], leitner, weakOnly: true, rng: mulberry32(6) })
+    expect(ex.map((e) => e.itemId).sort()).toEqual(['l1-w0', 'l2-w0'])
   })
 
   it('est reproductible avec la même graine de PRNG', () => {
