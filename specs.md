@@ -87,13 +87,12 @@ Les tests visent le comportement externe aux coutures principales :
 
 Instructions pour le développement de la prochaine itération :
 
-### 1. Mode verbes irréguliers : demander uniquement l'infinitif
+### 1. Mode verbes irréguliers : toujours partir de l'infinitif
 
-- Dans le mode verbes irréguliers (`verbs-en`), l'exercice doit demander **uniquement l'infinitif** : soit l'infinitif anglais à partir du français, soit l'infinitif français à partir de l'anglais (direction tirée au hasard, comme pour le vocabulaire).
-- **Ne jamais commencer un prompt avec le prétérit ou le past participle.** Ces formes ne sont plus utilisées comme champ donné ni comme champ demandé.
-- Le prétérit et le past participle ne sont plus des champs de saisie dans une session. Ils restent présents dans les données (import/export CSV, affichage dans les listes) et peuvent être affichés à titre informatif après une réponse (correction ou réussite), mais ils ne font pas l'objet d'une question.
-- Conséquence sur user story 16 : elle est remplacée par « pour un verbe irrégulier, je veux qu'on me propose la traduction FR ou l'infinitif EN au hasard et que je saisisse l'autre, afin de travailler la forme de base du verbe ».
-- Mettre à jour en conséquence le moteur de session (plus de "un champ sur quatre donné, trois demandés"), la correction et les tests de la couture 2.
+- Dans le mode verbes irréguliers (`verbs-en`), le **point de départ du prompt est toujours l'infinitif** : soit l'infinitif anglais, soit l'infinitif français (tiré au hasard). **Ne jamais commencer un prompt avec le prétérit ou le past participle.**
+- Le prétérit et le past participle **restent bien interrogés** : partant de l'infinitif donné, l'exercice peut demander de saisir le prétérit, le past participle, la traduction, ou une combinaison de ces formes (le nombre exact de champs demandés peut suivre la logique souhaitée, l'essentiel est que l'infinitif soit toujours le champ donné, jamais le prétérit ni le PP).
+- La user story 16 devient donc : « pour un verbe irrégulier, je veux qu'on me propose l'infinitif (EN ou FR au hasard) et que je saisisse le ou les autres champs (prétérit, past participle, traduction), afin de produire les formes utiles en contrôle sans jamais partir du prétérit ou du PP ».
+- Mettre à jour en conséquence le moteur de session, la correction et les tests de la couture 2 (règle : champ donné = infinitif, jamais prétérit/PP).
 
 ### 2. Affichage des erreurs : saisie erronée + correction
 
