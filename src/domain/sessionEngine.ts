@@ -45,14 +45,15 @@ function vocabFields(item: VocabItem, direction: Direction): { prompt: string; a
     : { prompt: item.translation, answer: item.fr }
 }
 
+export const VERB_LABELS: Record<VerbField, string> = {
+  fr: 'Infinitif (FR)',
+  infinitive: 'Infinitif (EN)',
+  preterite: 'Prétérit',
+  pastParticiple: 'Participe passé',
+}
+
 function verbPrompt(item: VerbItem, givenField: VerbField): string {
-  const labels: Record<VerbField, string> = {
-    fr: 'traduction FR',
-    infinitive: 'infinitif',
-    preterite: 'prétérit',
-    pastParticiple: 'participe passé',
-  }
-  return `${labels[givenField]} : ${item[givenField]}`
+  return `${VERB_LABELS[givenField]} : ${item[givenField]}`
 }
 
 function buildExercise(
@@ -68,20 +69,14 @@ function buildExercise(
 
   if (isVerb) {
     const verb = item as VerbItem
-    const givenField = pick(rng, VERB_FIELDS)
+    const givenField = pick(rng, ['infinitive', 'fr'] as VerbField[])
     const asked = VERB_FIELDS.filter((f) => f !== givenField)
-    const labels: Record<VerbField, string> = {
-      fr: 'traduction FR',
-      infinitive: 'infinitif',
-      preterite: 'prétérit',
-      pastParticiple: 'participe passé',
-    }
     return {
       ...base,
       direction: null,
       prompt: verbPrompt(verb, givenField),
       expected: asked.map((f) => verb[f]),
-      labels: asked.map((f) => labels[f]),
+      labels: asked.map((f) => VERB_LABELS[f]),
       given: { [givenField]: verb[givenField] },
       choices: null,
     }

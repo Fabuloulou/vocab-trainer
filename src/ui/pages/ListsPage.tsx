@@ -4,12 +4,7 @@ import { applyParsedItems } from '../../data/import'
 import { newId } from '../../data/ids'
 import { LIST_TYPES, UNCLASSIFIED_ID, isVerbList, type ListType, type WordList } from '../../domain/types'
 import { useApp } from '../state/AppContext'
-
-const TYPE_LABELS: Record<ListType, string> = {
-  'vocab-en': 'Vocabulaire anglais (FR/EN)',
-  'vocab-de': 'Vocabulaire allemand (FR/DE)',
-  'verbs-en': 'Verbes irréguliers anglais',
-}
+import { TYPE_LABELS } from '../listTypeLabels'
 
 function downloadCsv(fileName: string, content: string) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
@@ -79,21 +74,28 @@ export default function ListsPage() {
 
   const createSubList = (listId: string, name: string) => {
     const trimmed = name.trim()
-    if (!trimmed) return
+    const list = state.lists.find((l) => l.id === listId)
+    if (!trimmed || !list) return false
+    if (trimmed.toLocaleLowerCase('fr') === list.name.trim().toLocaleLowerCase('fr')) return false
     update((s) => ({
       ...s,
       lists: s.lists.map((l) =>
         l.id === listId ? { ...l, subLists: [...l.subLists, { id: newId('sub'), name: trimmed, itemIds: [] }] } : l,
       ),
     }))
+    return true
   }
 
   const renameSubList = (listId: string, subListId: string, name: string) => {
+    const trimmed = name.trim()
+    const list = state.lists.find((l) => l.id === listId)
+    if (!trimmed || !list) return
+    if (trimmed.toLocaleLowerCase('fr') === list.name.trim().toLocaleLowerCase('fr')) return
     update((s) => ({
       ...s,
       lists: s.lists.map((l) =>
         l.id === listId
-          ? { ...l, subLists: l.subLists.map((sub) => (sub.id === subListId ? { ...sub, name } : sub)) }
+          ? { ...l, subLists: l.subLists.map((sub) => (sub.id === subListId ? { ...sub, name: trimmed } : sub)) }
           : l,
       ),
     }))
@@ -278,7 +280,7 @@ function ListCard(props: {
   onExportAll: () => void
   onExportSub: (subId: string, subName: string) => void
   onDeleteList: () => void
-  onCreateSub: (name: string) => void
+  onCreateSub: (name: string) => boolean
   onRenameSub: (subId: string, name: string) => void
   onDeleteSub: (subId: string) => void
   onMoveItem: (itemId: string, target: string) => void
@@ -286,7 +288,18 @@ function ListCard(props: {
 }) {
   const { list } = props
   const [newSubName, setNewSubName] = useState('')
+  const [subError, setSubError] = useState('')
   const total = Object.keys(list.items).length
+
+  const handleCreateSub = () => {
+    const ok = props.onCreateSub(newSubName)
+    if (ok) {
+      setNewSubName('')
+      setSubError('')
+    } else {
+      setSubError('Donne un nom de sous-liste différent du nom de la liste (ex. « Leçon 1 »).')
+    }
+  }
 
   const itemLabel = (itemId: string): string => {
     const item = list.items[itemId]
@@ -335,8 +348,9 @@ function ListCard(props: {
       <div className="sublist-block">
         <div className="btn-row">
           <input type="text" placeholder="Nouvelle sous-liste (ex. Leçon 5)" value={newSubName} onChange={(e) => setNewSubName(e.target.value)} data-testid={`new-sub-${list.id}`} style={{ maxWidth: '260px' }} />
-          <button className="btn secondary small" data-testid={`create-sub-${list.id}`} onClick={() => { props.onCreateSub(newSubName); setNewSubName('') }} disabled={!newSubName.trim()}>+ Créer</button>
+          <button className="btn secondary small" data-testid={`create-sub-${list.id}`} onClick={handleCreateSub} disabled={!newSubName.trim()}>+ Créer</button>
         </div>
+        {subError && <p className="error-text" data-testid={`sub-error-${list.id}`}>{subError}</p>}
       </div>
 
       {list.unclassifiedItemIds.length > 0 && (

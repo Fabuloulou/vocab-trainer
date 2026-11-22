@@ -80,7 +80,7 @@ describe('moteur de session', () => {
     }
   })
 
-  it('verbes : un champ donné au hasard, exactement les 3 autres demandés', () => {
+  it('verbes : le champ donné est toujours l infinitif (EN ou FR au hasard), jamais prétérit/PP', () => {
     const verbs = Array.from({ length: 12 }, (_, i) => [`v${i}`, `p${i}`, `pp${i}`, `fr ${i}`] as [string, string, string, string])
     const list = makeVerbList('lv', verbs)
     const ex = buildSession({ lists: [list], selection: [{ listId: 'lv', subListId: 'lv-s1' }], leitner: {}, rng: mulberry32(9) })
@@ -92,13 +92,19 @@ describe('moteur de session', () => {
       expect(e.labels).toHaveLength(3)
       const givenFields = Object.keys(e.given ?? {}) as VerbField[]
       expect(givenFields).toHaveLength(1)
+      expect(['infinitive', 'fr']).toContain(givenFields[0])
+      expect(givenFields[0]).not.toBe('preterite')
+      expect(givenFields[0]).not.toBe('pastParticiple')
       givenSeen.add(givenFields[0])
       const verb = list.items[e.itemId] as VerbItem
       const askedFields = VERB_FIELDS.filter((f) => !givenFields.includes(f))
+      expect(askedFields).toContain('preterite')
+      expect(askedFields).toContain('pastParticiple')
       expect(e.expected).toEqual(askedFields.map((f) => verb[f]))
       expect(e.given?.[givenFields[0]]).toBe(verb[givenFields[0]])
+      expect(e.prompt).toContain(verb[givenFields[0]])
     }
-    expect(givenSeen.size).toBeGreaterThan(1)
+    expect(givenSeen.size).toBe(2)
   })
 
   it('QCM avec une liste à un seul élément : retombe en saisie (pas de distracteur possible)', () => {

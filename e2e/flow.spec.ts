@@ -20,7 +20,10 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
   await expect(page.getByTestId('import-info')).toContainText('4 mot(s)')
 
   await page.getByTestId('nav-home').click()
-  await page.locator('[data-testid^="select-sublist-"]').first().check()
+  await expect(page.getByTestId(/^list-group-/).first()).toBeVisible()
+  const group = page.locator('[data-testid^="list-group-"]').first()
+  await group.getByTestId(/^toggle-all-/).check()
+  expect(await page.locator('[data-testid^="select-sublist-"]:checked').count()).toBeGreaterThan(0)
   await page.getByTestId('start-session').click()
   await expect(page.getByTestId('exercise-card')).toBeVisible()
 
@@ -47,6 +50,10 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
       await page.getByTestId('btn-submit').click()
       await page.waitForSelector('[data-testid="btn-next"], [data-testid="results-card"]', { timeout: 10_000 })
       if ((await page.getByTestId('results-card').count()) > 0) break
+      if ((await page.getByTestId('feedback-ko').count()) > 0) {
+        await expect(page.getByTestId('expected-answers')).toContainText('réponse test')
+        await expect(page.getByTestId('expected-answers')).toContainText('Réponse attendue')
+      }
       await page.getByTestId('btn-next').click()
     }
   }

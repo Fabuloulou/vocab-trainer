@@ -101,14 +101,14 @@ export default function SessionPage() {
     tryAnswer('ask', () => {
       const ok = checkAnswer(choice, exercise.expected[0])
       record(ok)
-      dispatch({ type: 'submit', ok, expected: exercise.expected })
+      dispatch({ type: 'submit', ok, expected: exercise.expected, input: [choice] })
     })
 
   const onTyping = () =>
     tryAnswer('ask', () => {
       const ok = exercise.expected.every((exp, i) => checkAnswer(typingInputs[i] ?? '', exp))
       record(ok)
-      dispatch({ type: 'submit', ok, expected: exercise.expected })
+      dispatch({ type: 'submit', ok, expected: exercise.expected, input: [...typingInputs] })
     })
 
   const verbItem = exercise.listType === 'verbs-en'
@@ -163,8 +163,13 @@ export default function SessionPage() {
       {exercise.kind === 'qcm' && runner.phase === 'feedback' && !runner.finished && runner.verdict && (
         <div>
           <p className={`feedback ${runner.verdict.ok ? 'ok' : 'ko'}`} data-testid={runner.verdict.ok ? 'feedback-ok' : 'feedback-ko'}>
-            {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : `✘ Mauvaise réponse. C'était : ${runner.verdict.expected[0]}`}
+            {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : '✘ Mauvaise réponse.'}
           </p>
+          {!runner.verdict.ok && (
+            <p className="exercise-expected" data-testid="expected-answers">
+              Tu as saisi : <s data-testid="wrong-input-0">{runner.verdict.input[0]}</s> → Réponse attendue : <strong>{runner.verdict.expected[0]}</strong>
+            </p>
+          )}
           <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
         </div>
       )}
@@ -199,9 +204,13 @@ export default function SessionPage() {
             {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : '✘ Mauvaise réponse.'}
           </p>
           {!runner.verdict.ok && (
-            <p className="exercise-expected" data-testid="expected-answers">
-              Réponses attendues : {exercise.labels.map((l, i) => `${l} = ${runner.verdict?.expected[i]}`).join(' · ')}
-            </p>
+            <div className="exercise-expected" data-testid="expected-answers">
+              {exercise.labels.map((label, i) => (
+                <p key={i} data-testid={`expected-row-${i}`}>
+                  {label} — Tu as saisi : <s data-testid={`wrong-input-${i}`}>{runner.verdict?.input[i] ?? ''}</s> → Réponse attendue : <strong data-testid={`expected-value-${i}`}>{runner.verdict?.expected[i]}</strong>
+                </p>
+              ))}
+            </div>
           )}
           <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
         </div>

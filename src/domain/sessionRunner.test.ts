@@ -30,10 +30,10 @@ describe('sessionRunner', () => {
   it('une soumission répétée en phase feedback est ignorée (pas de double comptage)', () => {
     const exs = exercises(3)
     let s = createRunner(exs, 'classic')
-    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected })
+    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected, input: ['saisie 0'] })
     expect(s.results).toEqual([true])
     expect(s.phase).toBe('feedback')
-    s = runnerReducer(exs, s, { type: 'submit', ok: false, expected: exs[0].expected })
+    s = runnerReducer(exs, s, { type: 'submit', ok: false, expected: exs[0].expected, input: ['saisie 0'] })
     expect(s.results).toEqual([true])
     expect(s.finished).toBe(false)
   })
@@ -41,10 +41,10 @@ describe('sessionRunner', () => {
   it('la dernière réponse termine la session immédiatement', () => {
     const exs = exercises(2)
     let s = createRunner(exs, 'classic')
-    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected })
+    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected, input: ['saisie 0'] })
     s = runnerReducer(exs, s, { type: 'next' })
     expect(s.index).toBe(1)
-    s = runnerReducer(exs, s, { type: 'submit', ok: false, expected: exs[1].expected })
+    s = runnerReducer(exs, s, { type: 'submit', ok: false, expected: exs[1].expected, input: ['saisie 1'] })
     expect(s.finished).toBe(true)
     expect(s.results).toEqual([true, false])
   })
@@ -53,7 +53,7 @@ describe('sessionRunner', () => {
     const exs = exercises(3)
     let s = createRunner(exs, 'challenge')
     expect(s.timeLeft).toBe(30)
-    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected })
+    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected, input: ['saisie 0'] })
     expect(s.phase).toBe('feedback')
     for (let i = 0; i < 29; i++) s = runnerReducer(exs, s, { type: 'tick' })
     expect(s.finished).toBe(false)
@@ -66,9 +66,9 @@ describe('sessionRunner', () => {
   it('après la fin, toute action est ignorée (concurrence dernière réponse / timeout)', () => {
     const exs = exercises(1)
     let s = createRunner(exs, 'challenge')
-    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected })
+    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[0].expected, input: ['saisie 0'] })
     expect(s.finished).toBe(true)
-    const after = run(exs, s, [{ type: 'tick' }, { type: 'next' }, { type: 'submit', ok: false, expected: [] }])
+    const after = run(exs, s, [{ type: 'tick' }, { type: 'next' }, { type: 'submit', ok: false, expected: [], input: [] }])
     expect(after).toBe(s)
     expect(after.results).toEqual([true])
   })
@@ -97,6 +97,13 @@ describe('sessionRunner', () => {
     s = runnerReducer(exs, s, { type: 'next' })
     expect(s.index).toBe(0)
     expect(s.phase).toBe('ask')
+  })
+
+  it('le verdict conserve la saisie de l utilisateur pour l affichage de l erreur', () => {
+    const exs = exercises(2)
+    let s = createRunner(exs, 'classic')
+    s = runnerReducer(exs, s, { type: 'submit', ok: false, expected: exs[0].expected, input: ['became'] })
+    expect(s.verdict).toEqual({ ok: false, expected: exs[0].expected, input: ['became'] })
   })
 
   it('tick sans chrono (mode classique) ne change rien', () => {

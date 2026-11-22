@@ -7,7 +7,7 @@ export interface RunnerState {
   index: number
   results: boolean[]
   phase: RunnerPhase
-  verdict: { ok: boolean; expected: string[] } | null
+  verdict: { ok: boolean; expected: string[]; input: string[] } | null
   finished: boolean
   timeLeft: number | null
 }
@@ -15,7 +15,7 @@ export interface RunnerState {
 export type RunnerAction =
   | { type: 'reveal' }
   | { type: 'answer'; ok: boolean }
-  | { type: 'submit'; ok: boolean; expected: string[] }
+  | { type: 'submit'; ok: boolean; expected: string[]; input: string[] }
   | { type: 'next' }
   | { type: 'tick' }
 
@@ -51,7 +51,7 @@ export function runnerReducer(exercises: Exercise[], state: RunnerState, action:
       return {
         ...state,
         results,
-        verdict: { ok: action.ok, expected: action.expected },
+        verdict: { ok: action.ok, expected: action.expected, input: action.input },
         phase: 'feedback',
         finished: isLast,
       }
