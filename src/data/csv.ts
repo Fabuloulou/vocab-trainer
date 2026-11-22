@@ -17,17 +17,23 @@ export interface ParseResult {
   errors: CsvError[]
 }
 
-const VOCAB_HEADERS = ['fr;trad;liste', 'fr;traduction;liste']
-const VERB_HEADERS = ['infinitive;preterite;past_participle;fr;liste']
+const VOCAB_HEADERS = ['fr;trad;liste', 'fr;traduction;liste', 'fr;trad', 'fr;traduction']
+const VERB_HEADERS = ['infinitive;preterite;past_participle;fr;liste', 'infinitive;preterite;past_participle;fr']
 
 function normalizeHeader(line: string): string {
   return line.replace(/^﻿/, '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('fr')
 }
 
-export function parseLine(row: string): string[] {
+export interface ParsedLine {
+  fields: string[]
+  error: string | null
+}
+
+export function parseLine(row: string): ParsedLine {
   const fields: string[] = []
   let current = ''
   let inQuotes = false
+  let quoted = false
   for (let i = 0; i < row.length; i++) {
     const ch = row[i]
     if (inQuotes) {
@@ -42,16 +48,28 @@ export function parseLine(row: string): string[] {
         current += ch
       }
     } else if (ch === '"') {
-      inQuotes = true
+      if (current === '' && !quoted) {
+        inQuotes = true
+        quoted = true
+      } else {
+        return { fields: [], error: 'Guillemet en position illégale' }
+      }
     } else if (ch === CSV_SEPARATOR) {
       fields.push(current)
       current = ''
+      quoted = false
     } else {
+      if (quoted) {
+        return { fields: [], error: 'Texte après un guillemet fermant' }
+      }
       current += ch
     }
   }
+  if (inQuotes) {
+    return { fields: [], error: 'Guillemet non fermé' }
+  }
   fields.push(current)
-  return fields
+  return { fields, error: null }
 }
 
 export function escapeField(value: string): string {
@@ -90,7 +108,12 @@ export function parseCsv(text: string, type: ListType): ParseResult {
     const raw = lines[i]
     const lineNo = i + 1
     if (raw.trim() === '') continue
-    const fields = parseLine(raw).map((f) => f.trim())
+    const parsed = parseLine(raw)
+    if (parsed.error) {
+      errors.push({ line: lineNo, message: parsed.error, raw })
+      continue
+    }
+    const fields = parsed.fields.map((f) => f.trim())
     const subListName = fields.length > (isVerbList(type) ? 4 : 2) ? (fields[isVerbList(type) ? 4 : 2] || null) : null
 
     if (isVerbList(type)) {

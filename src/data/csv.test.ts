@@ -38,7 +38,39 @@ describe('parseur CSV — vocabulaire', () => {
   })
 
   it('parseLine respecte les guillemets échappés', () => {
-    expect(parseLine('a;"b;""c""";d')).toEqual(['a', 'b;"c"', 'd'])
+    expect(parseLine('a;"b;""c""";d')).toEqual({ fields: ['a', 'b;"c"', 'd'], error: null })
+  })
+
+  it('accepte un en-tête sans colonne liste (vocab)', () => {
+    const res = parseCsv('fr;trad\nle chat;a cat\n', 'vocab-en')
+    expect(res.errors).toEqual([])
+    expect(res.items[0]).toMatchObject({ fr: 'le chat', translation: 'a cat', subListName: null })
+  })
+
+  it('accepte un en-tête sans colonne liste (verbes)', () => {
+    const res = parseCsv('infinitive;preterite;past_participle;fr\nbe;was/were;been;être\n', 'verbs-en')
+    expect(res.errors).toEqual([])
+    expect(res.items[0]).toMatchObject({ infinitive: 'be', subListName: null })
+  })
+
+  it('signale un guillemet non fermé avec le numéro de ligne', () => {
+    const res = parseCsv('fr;trad;liste\n"le chat;a cat;L1\n', 'vocab-en')
+    expect(res.items).toHaveLength(0)
+    expect(res.errors[0].line).toBe(2)
+    expect(res.errors[0].message).toContain('non fermé')
+  })
+
+  it('signale un guillemet en position illégale', () => {
+    expect(parseLine('ab"cd;ef').error).toContain('illégale')
+    const res = parseCsv('fr;trad;liste\nab"cd;ef;L1\n', 'vocab-en')
+    expect(res.errors[0].line).toBe(2)
+  })
+
+  it('signale du texte après un guillemet fermant', () => {
+    expect(parseLine('"ab"cd;ef').error).toContain('après')
+    const res = parseCsv('fr;trad;liste\n"ab"cd;ef;L1\n', 'vocab-en')
+    expect(res.items).toHaveLength(0)
+    expect(res.errors[0].line).toBe(2)
   })
 })
 

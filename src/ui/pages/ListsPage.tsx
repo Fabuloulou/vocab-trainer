@@ -44,25 +44,27 @@ export default function ListsPage() {
 
   const onCommit = () => {
     if (!preview) return
-    update((s) => {
-      let list: WordList | undefined = existingListId ? s.lists.find((l) => l.id === existingListId) : undefined
-      if (!list) {
-        list = {
-          id: newId('list'),
-          name: listName.trim() || TYPE_LABELS[type],
-          type,
-          isExample: false,
-          items: {},
-          subLists: [],
-          unclassifiedItemIds: [],
-        }
-        const outcome = applyParsedItems(list, preview.items)
-        return { ...s, lists: [...s.lists, outcome.list] }
-      }
-      const outcome = applyParsedItems(list, preview.items)
-      return { ...s, lists: s.lists.map((l) => (l.id === list.id ? outcome.list : l)) }
-    })
-    setImportInfo(`Import terminé : ${preview.items.length} mot(s) ajoutés.`)
+    const target = existingListId ? state.lists.find((l) => l.id === existingListId) : undefined
+    const baseList: WordList = target ?? {
+      id: newId('list'),
+      name: listName.trim() || TYPE_LABELS[type],
+      type,
+      isExample: false,
+      items: {},
+      subLists: [],
+      unclassifiedItemIds: [],
+    }
+    const outcome = applyParsedItems(baseList, preview.items)
+    update((s) =>
+      target
+        ? { ...s, lists: s.lists.map((l) => (l.id === target.id ? outcome.list : l)) }
+        : { ...s, lists: [...s.lists, outcome.list] },
+    )
+    setImportInfo(
+      `Import terminé : ${outcome.added} mot(s) ajouté(s)` +
+        (outcome.skipped > 0 ? `, ${outcome.skipped} doublon(s) ignoré(s)` : '') +
+        '.',
+    )
     setPreview(null)
     setCsvText('')
   }

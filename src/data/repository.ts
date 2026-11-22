@@ -45,7 +45,11 @@ export class LocalStorageRepository implements Repository {
   }
 
   save(state: AppState): void {
-    this.storage.setItem(this.key, JSON.stringify({ ...state, version: SCHEMA_VERSION }))
+    try {
+      this.storage.setItem(this.key, JSON.stringify({ ...state, version: SCHEMA_VERSION }))
+    } catch {
+      // Quota dépassé ou stockage indisponible : l'état reste en mémoire pour la session en cours.
+    }
   }
 
   reset(): AppState {

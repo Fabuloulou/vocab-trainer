@@ -25,14 +25,17 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
   await expect(page.getByTestId('exercise-card')).toBeVisible()
 
   for (let i = 0; i < 20; i++) {
+    await page.waitForSelector(
+      '[data-testid="results-card"], [data-testid="btn-reveal"], [data-testid="qcm-choice-0"], [data-testid="typing-input-0"]',
+      { timeout: 15_000 },
+    )
     if ((await page.getByTestId('results-card').count()) > 0) break
-    if ((await page.getByTestId('exercise-card').count()) === 0) break
-    await page.waitForSelector('[data-testid="btn-reveal"], [data-testid="qcm-choice-0"], [data-testid="typing-input-0"]', { timeout: 10_000 })
     if ((await page.getByTestId('btn-reveal').count()) > 0) {
       await page.getByTestId('btn-reveal').click()
       await page.getByTestId('btn-correct').click()
     } else if ((await page.getByTestId('qcm-choice-0').count()) > 0) {
       await page.getByTestId('qcm-choice-0').click()
+      await page.waitForSelector('[data-testid="btn-next"], [data-testid="results-card"]', { timeout: 10_000 })
       if ((await page.getByTestId('results-card').count()) > 0) break
       await page.getByTestId('btn-next').click()
     } else {
@@ -42,6 +45,7 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
         await inputs.nth(j).fill('réponse test')
       }
       await page.getByTestId('btn-submit').click()
+      await page.waitForSelector('[data-testid="btn-next"], [data-testid="results-card"]', { timeout: 10_000 })
       if ((await page.getByTestId('results-card').count()) > 0) break
       await page.getByTestId('btn-next').click()
     }

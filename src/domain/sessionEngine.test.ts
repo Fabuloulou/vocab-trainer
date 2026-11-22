@@ -101,6 +101,27 @@ describe('moteur de session', () => {
     expect(givenSeen.size).toBeGreaterThan(1)
   })
 
+  it('QCM avec une liste à un seul élément : retombe en saisie (pas de distracteur possible)', () => {
+    const list = makeVocabList('l1', [['seul', 'only']])
+    for (const seed of [1, 2, 3, 42, 99]) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, rng: mulberry32(seed) })
+      expect(ex).toHaveLength(1)
+      expect(ex[0].kind).not.toBe('qcm')
+      expect(ex[0].choices).toBeNull()
+    }
+  })
+
+  it('QCM avec peu d éléments : nombre de choix limité aux distracteurs disponibles + 1', () => {
+    const list = makeVocabList('l1', [['a', 'x'], ['b', 'y'], ['c', 'z']])
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, rng: mulberry32(13) })
+    for (const q of ex.filter((e) => e.kind === 'qcm')) {
+      expect(q.choices!.length).toBeLessThanOrEqual(3)
+      expect(q.choices!.length).toBeGreaterThanOrEqual(2)
+      expect(new Set(q.choices).size).toBe(q.choices!.length)
+      expect(q.choices).toContain(q.expected[0])
+    }
+  })
+
   it('sélection multiple : agrège plusieurs sous-listes', () => {
     const list = makeVocabList('l1', [['a', 'x'], ['b', 'y'], ['c', 'z']])
     list.subLists.push({ id: 'l1-s2', name: 'S2', itemIds: ['l1-w2'] })

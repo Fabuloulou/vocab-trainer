@@ -34,6 +34,19 @@ describe('repository localStorage (couture 4)', () => {
     expect(repo.load().lists).toHaveLength(3)
   })
 
+  it('save() ne lève pas si setItem échoue (quota / stockage indisponible)', () => {
+    const failingStorage = {
+      ...memoryStorage(),
+      setItem: () => {
+        throw new Error('QuotaExceededError')
+      },
+    }
+    const repo = new LocalStorageRepository(failingStorage)
+    const state = repo.load()
+    expect(() => repo.save({ ...state, profile: { ...state.profile, points: 50 } })).not.toThrow()
+    expect(repo.load().profile.points).toBe(0)
+  })
+
   it('reset() repart des données de démo', () => {
     const repo = new LocalStorageRepository(memoryStorage())
     repo.save({ ...seedState(), profile: { points: 999, streak: { lastDate: null, count: 0 }, history: [] } })

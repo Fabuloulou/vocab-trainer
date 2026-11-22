@@ -93,6 +93,9 @@ function buildExercise(
 
   if (kind === 'qcm') {
     const siblings = (poolByList.get(list.id) ?? []).filter((other) => other.id !== item.id)
+    if (siblings.length === 0) {
+      return { ...base, kind: 'typing', direction, prompt, expected: [answer], labels: ['réponse'], given: null, choices: null }
+    }
     const distractors = shuffle(rng, siblings)
       .slice(0, QCM_CHOICES - 1)
       .map((other) => (direction === 'fr-to-target' ? (other as VocabItem).translation : (other as VocabItem).fr))
