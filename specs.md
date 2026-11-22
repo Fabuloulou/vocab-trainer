@@ -82,3 +82,35 @@ Les tests visent le comportement externe aux coutures principales :
 - Le streak se calcule sur des journées calendaires (Fuseau Europe/Paris), pas sur 24 h glissantes.
 - Les distracteurs du QCM proviennent des autres mots de la même liste pour rester plausibles.
 - Le mode défi chronométré réutilise le même moteur de session avec un chrono et un scoring bonifié.
+
+## Itération suivante
+
+Instructions pour le développement de la prochaine itération :
+
+### 1. Mode verbes irréguliers : demander uniquement l'infinitif
+
+- Dans le mode verbes irréguliers (`verbs-en`), l'exercice doit demander **uniquement l'infinitif** : soit l'infinitif anglais à partir du français, soit l'infinitif français à partir de l'anglais (direction tirée au hasard, comme pour le vocabulaire).
+- **Ne jamais commencer un prompt avec le prétérit ou le past participle.** Ces formes ne sont plus utilisées comme champ donné ni comme champ demandé.
+- Le prétérit et le past participle ne sont plus des champs de saisie dans une session. Ils restent présents dans les données (import/export CSV, affichage dans les listes) et peuvent être affichés à titre informatif après une réponse (correction ou réussite), mais ils ne font pas l'objet d'une question.
+- Conséquence sur user story 16 : elle est remplacée par « pour un verbe irrégulier, je veux qu'on me propose la traduction FR ou l'infinitif EN au hasard et que je saisisse l'autre, afin de travailler la forme de base du verbe ».
+- Mettre à jour en conséquence le moteur de session (plus de "un champ sur quatre donné, trois demandés"), la correction et les tests de la couture 2.
+
+### 2. Affichage des erreurs : saisie erronée + correction
+
+- En cas d'erreur, l'écran de correction doit afficher **côte à côte la saisie erronée de l'utilisateur et la réponse attendue**, par exemple : « Tu as saisi : *become* → Réponse attendue : *become* » avec la saisie erronée barrée ou mise en évidence.
+- Objectif : permettre de comprendre immédiatement la nature de l'erreur (faute d'orthographe, accent manquant, mauvais mot) sans chercher ni se demander ce qui était attendu.
+- Cela complète la user story 18 : voir la bonne réponse ne suffit plus, il faut voir aussi sa propre erreur. Concerne tous les exercices avec saisie (vocabulaire et verbes).
+
+### 3. Clarification de la sélection des sous-listes
+
+Constat utilisateur (capture d'écran) : sur l'écran « Lancer un entraînement », les libellés de cases à cocher du type « Liste 1 : be > bring · Liste 1 : be > bring (10 mots) » sont incompréhensibles, car le nom de la sous-liste est identique au nom de sa liste parente, et le libellé actuel concatène simplement `nom de liste · nom de sous-liste`.
+
+Clarification du fonctionnement actuel (à documenter et à améliorer) :
+
+- Une **liste** (thème, ex. les verbes irréguliers) contient des **sous-listes** correspondant aux leçons, plus une zone « non classés ». Sur l'écran « Lancer un entraînement », chaque case à cocher représente **une sous-liste** (pas une liste) : le premier élément du libellé est le nom de la liste, le second est le nom de la sous-liste.
+- La session pioche uniquement les mots des sous-listes cochées, toutes listes confondues.
+- Améliorations à livrer :
+  - Regrouper visuellement les cases à cocher par liste parente (en-tête de liste, puis ses sous-listes), au lieu d'une liste plate.
+  - Ajouter une case « tout cocher / tout décocher » par liste.
+  - Rendre les libellés non ambigus : ne pas répéter le nom de la liste si la sous-liste porte le même nom, ou forcer des noms de sous-listes distincts et parlants (ex. « Leçon 1 », « Leçon 2 ») à la création ; ne pas réutiliser le nom de la liste comme nom de sous-liste par défaut.
+  - Afficher le type de liste (vocabulaire / verbes) et le nombre de mots, et expliquer en une phrase sous le titre : « Coche une ou plusieurs sous-listes ; l'entraînement piochera uniquement leurs mots ».
