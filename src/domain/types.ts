@@ -63,19 +63,35 @@ export interface Streak {
   count: number
 }
 
-export interface Profile {
+export interface Progress {
   points: number
   streak: Streak
   history: SessionRecord[]
 }
 
-export interface AppState {
-  version: number
-  lists: WordList[]
-  leitner: Record<string, LeitnerState>
-  profile: Profile
+export function emptyProgress(): Progress {
+  return { points: 0, streak: { lastDate: null, count: 0 }, history: [] }
 }
 
-export function emptyProfile(): Profile {
-  return { points: 0, streak: { lastDate: null, count: 0 }, history: [] }
+export const DEFAULT_PROFILE_EMOJI = '\u{1F642}'
+
+export const PROFILE_EMOJIS = [
+  '\u{1F642}', '\u{1F98A}', '\u{1F43C}', '\u{1F981}', '\u{1F438}', '\u{1F435}', '\u{1F984}', '\u{1F419}',
+  '\u{1F680}', '\u{2B50}', '\u{1F3AE}', '\u{1F4DA}', '\u{1F422}', '\u{1F989}', '\u{1F916}', '\u{1F47D}',
+  '\u{1F335}', '\u{1F369}',
+]
+
+export interface UserProfile {
+  id: string
+  name: string
+  emoji: string
+  lists: WordList[]
+  leitner: Record<string, LeitnerState>
+  progress: Progress
+}
+
+export interface AppState {
+  version: number
+  profiles: UserProfile[]
+  activeProfileId: string | null
 }

@@ -14,7 +14,7 @@ interface SessionLocationState {
 }
 
 export default function SessionPage() {
-  const { update } = useApp()
+  const { updateActive } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const session = (location.state ?? null) as SessionLocationState | null
@@ -58,9 +58,9 @@ export default function SessionPage() {
     finishCalledRef.current = true
     const score = runner.results.filter(Boolean).length
     const pointsEarned = runner.results.reduce((acc, ok) => acc + pointsFor(ok, mode), 0)
-    update((s) => ({
-      ...s,
-      profile: recordSession(s.profile, {
+    updateActive((p) => ({
+      ...p,
+      progress: recordSession(p.progress, {
         date: new Date().toISOString(),
         mode,
         score,
@@ -72,7 +72,7 @@ export default function SessionPage() {
       state: { score, total: runner.results.length, pointsEarned, mode, label: session?.label ?? '' },
       replace: true,
     })
-  }, [runner.finished, runner.results, mode, exercises.length, update, navigate, session?.label])
+  }, [runner.finished, runner.results, mode, exercises.length, updateActive, navigate, session?.label])
 
   if (!session || !exercise) return null
 
@@ -82,7 +82,7 @@ export default function SessionPage() {
       setShake(true)
       setTimeout(() => setShake(false), 450)
     }
-    update((s) => applyResultToState(s, exercise.itemId, ok, new Date().toISOString()))
+    updateActive((p) => applyResultToState(p, exercise.itemId, ok, new Date().toISOString()))
   }
 
   const tryAnswer = (expectedPhase: RunnerPhase, fn: () => void) => {

@@ -1,5 +1,5 @@
 import { newId } from './ids'
-import { emptyProfile, type AppState, type WordList } from '../domain/types'
+import { DEFAULT_PROFILE_EMOJI, emptyProgress, type AppState, type UserProfile, type WordList } from '../domain/types'
 import { SCHEMA_VERSION } from './migrations'
 
 function vocabList(name: string, subLists: [string, [string, string][]][]): WordList {
@@ -105,11 +105,22 @@ export function exampleLists(): WordList[] {
   return [en, de, verbs]
 }
 
-export function seedState(): AppState {
+export function createUserProfile(name: string, emoji: string): UserProfile {
   return {
-    version: SCHEMA_VERSION,
+    id: newId('profile'),
+    name,
+    emoji,
     lists: exampleLists(),
     leitner: {},
-    profile: emptyProfile(),
+    progress: emptyProgress(),
+  }
+}
+
+export function seedState(): AppState {
+  const profile = createUserProfile('Moi', DEFAULT_PROFILE_EMOJI)
+  return {
+    version: SCHEMA_VERSION,
+    profiles: [profile],
+    activeProfileId: profile.id,
   }
 }

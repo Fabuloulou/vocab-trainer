@@ -16,13 +16,14 @@ interface SelectableRow {
 }
 
 export default function HomePage() {
-  const { state } = useApp()
+  const { activeProfile } = useApp()
   const navigate = useNavigate()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [challenge, setChallenge] = useState(false)
 
   const groups = useMemo(() => {
-    return state.lists
+    if (!activeProfile) return []
+    return activeProfile.lists
       .map((list) => {
         const rows: SelectableRow[] = list.subLists
           .filter((sub) => sub.itemIds.length > 0)
@@ -46,7 +47,7 @@ export default function HomePage() {
         return { list, rows, total }
       })
       .filter((g) => g.rows.length > 0)
-  }, [state.lists])
+  }, [activeProfile])
 
   const toggle = (key: string) => {
     setSelected((prev) => {
@@ -71,10 +72,11 @@ export default function HomePage() {
   }
 
   const start = (mode: SessionMode, selection: SelectedSubList[], weak: boolean) => {
+    if (!activeProfile) return
     const exercises = buildSession({
-      lists: state.lists,
+      lists: activeProfile.lists,
       selection,
-      leitner: state.leitner,
+      leitner: activeProfile.leitner,
       weakOnly: weak,
       rng: Math.random,
     })
@@ -95,21 +97,26 @@ export default function HomePage() {
     start(challenge ? 'challenge' : 'classic', [], true)
   }
 
-  const hasWeak = useMemo(() => hasWeakItems(state.lists, state.leitner), [state.lists, state.leitner])
+  const hasWeak = useMemo(
+    () => (activeProfile ? hasWeakItems(activeProfile.lists, activeProfile.leitner) : false),
+    [activeProfile],
+  )
+
+  if (!activeProfile) return null
 
   return (
     <div>
       <div className="stat-grid">
         <div className="stat" data-testid="stat-streak">
-          <div className="value">🔥 {state.profile.streak.count}</div>
+          <div className="value">🔥 {activeProfile.progress.streak.count}</div>
           <div className="label">jours de suite</div>
         </div>
         <div className="stat" data-testid="stat-points">
-          <div className="value">⭐ {state.profile.points}</div>
+          <div className="value">⭐ {activeProfile.progress.points}</div>
           <div className="label">points</div>
         </div>
         <div className="stat" data-testid="stat-mastery">
-          <div className="value">{globalMastery(state)} %</div>
+          <div className="value">{globalMastery(activeProfile)} %</div>
           <div className="label">maîtrise globale</div>
         </div>
       </div>
