@@ -51,6 +51,7 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
       await page.waitForSelector('[data-testid="btn-next"], [data-testid="results-card"]', { timeout: 10_000 })
       if ((await page.getByTestId('results-card').count()) > 0) break
       if ((await page.getByTestId('feedback-ko').count()) > 0) {
+        await expect(page.getByTestId('feedback-ko')).toContainText("champ(s) en erreur")
         await expect(page.getByTestId('expected-answers')).toContainText('réponse test')
         await expect(page.getByTestId('expected-answers')).toContainText('Réponse attendue')
       }

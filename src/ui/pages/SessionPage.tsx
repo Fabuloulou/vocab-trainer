@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { checkAnswer } from '../../domain/checkAnswer'
+import { checkAnswer, fieldVerdicts } from '../../domain/checkAnswer'
 import { applyResultToState, pointsFor, recordSession } from '../../domain/progress'
 import type { Exercise } from '../../domain/sessionEngine'
 import { createRunner, runnerReducer, type RunnerPhase } from '../../domain/sessionRunner'
@@ -194,15 +194,24 @@ export default function SessionPage() {
       {exercise.kind === 'typing' && runner.phase === 'feedback' && !runner.finished && runner.verdict && (
         <div>
           <p className={`feedback ${runner.verdict.ok ? 'ok' : 'ko'}`} data-testid={runner.verdict.ok ? 'feedback-ok' : 'feedback-ko'}>
-            {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : '✘ Mauvaise réponse.'}
+            {runner.verdict.ok
+              ? '✔ Bravo, bonne réponse !'
+              : `✘ Mauvaise réponse (${fieldVerdicts(runner.verdict.input, runner.verdict.expected).filter((v) => !v).length} champ(s) en erreur sur ${runner.verdict.expected.length}).`}
           </p>
           {!runner.verdict.ok && (
             <div className="exercise-expected" data-testid="expected-answers">
-              {exercise.labels.map((label, i) => (
-                <p key={i} data-testid={`expected-row-${i}`}>
-                  {label} — Tu as saisi : <s data-testid={`wrong-input-${i}`}>{runner.verdict?.input[i] ?? ''}</s> → Réponse attendue : <strong data-testid={`expected-value-${i}`}>{runner.verdict?.expected[i]}</strong>
-                </p>
-              ))}
+              {exercise.labels.map((label, i) => {
+                const input = runner.verdict?.input[i] ?? ''
+                const expected = runner.verdict?.expected[i] ?? ''
+                const fieldOk = checkAnswer(input, expected)
+                return fieldOk ? (
+                  <p key={i} className="feedback ok" data-testid={`expected-row-${i}`}>✔ {label} : {input}</p>
+                ) : (
+                  <p key={i} data-testid={`expected-row-${i}`}>
+                    {label} — Tu as saisi : <s data-testid={`wrong-input-${i}`}>{input}</s> → Réponse attendue : <strong data-testid={`expected-value-${i}`}>{expected}</strong>
+                  </p>
+                )
+              })}
             </div>
           )}
           <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
