@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { hasWeakItems } from '../../domain/leitner'
 import { buildSession, type SelectedSubList } from '../../domain/sessionEngine'
 import { UNCLASSIFIED_ID, type SessionMode } from '../../domain/types'
 import { globalMastery } from '../../domain/progress'
@@ -94,9 +95,7 @@ export default function HomePage() {
     start(challenge ? 'challenge' : 'classic', [], true)
   }
 
-  const hasWeak = useMemo(() => {
-    return Object.values(state.leitner).some((l) => l.box <= 2)
-  }, [state.leitner])
+  const hasWeak = useMemo(() => hasWeakItems(state.lists, state.leitner), [state.lists, state.leitner])
 
   return (
     <div>

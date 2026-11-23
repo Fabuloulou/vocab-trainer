@@ -152,6 +152,25 @@ test('double clic rapide sur un QCM applique la progression Leitner une seule fo
   }
 })
 
+test('« Mes mots faibles » est disponible dès l import, sans session passée (mots non vus = boîte 1)', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => window.localStorage.clear())
+  await page.reload()
+  await page.getByTestId('nav-listes').click()
+  await page.getByTestId('delete-examples').click()
+  await page.getByTestId('import-type').selectOption('vocab-en')
+  await page.getByTestId('import-listname').fill('Test faibles')
+  await page.getByTestId('import-textarea').fill('fr;trad;liste\nle chat;a cat;L1\nle chien;a dog;L1\n')
+  await page.getByTestId('btn-preview').click()
+  await page.getByTestId('btn-commit-import').click()
+
+  await page.getByTestId('nav-home').click()
+  await expect(page.getByTestId('start-weak')).toBeEnabled()
+  await page.getByTestId('start-weak').click()
+  await expect(page.getByTestId('exercise-card')).toBeVisible()
+  await expect(page.getByTestId('session-progress')).toContainText('/ 2')
+})
+
 test('lignes CSV en erreur bloquent la validation', async ({ page }) => {
   await page.goto('/')
   await page.evaluate(() => window.localStorage.clear())
