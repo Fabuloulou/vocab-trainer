@@ -113,3 +113,18 @@ Clarification du fonctionnement actuel (à documenter et à améliorer) :
   - Ajouter une case « tout cocher / tout décocher » par liste.
   - Rendre les libellés non ambigus : ne pas répéter le nom de la liste si la sous-liste porte le même nom, ou forcer des noms de sous-listes distincts et parlants (ex. « Leçon 1 », « Leçon 2 ») à la création ; ne pas réutiliser le nom de la liste comme nom de sous-liste par défaut.
   - Afficher le type de liste (vocabulaire / verbes) et le nombre de mots, et expliquer en une phrase sous le titre : « Coche une ou plusieurs sous-listes ; l'entraînement piochera uniquement leurs mots ».
+
+### 4. Gestion des profils utilisateurs (multi-profils)
+
+Décisions validées pour cette itération :
+
+- **Profils locaux, sans authentification** : chaque utilisateur de la famille = un profil nommé (nom obligatoire + emoji avatar choisi dans une liste, ex. 🦊 🐼 🦉). Création libre en un clic depuis un écran de sélection de profil à l'ouverture ; renommage et suppression possibles depuis cet écran, avec confirmation pour la suppression.
+- **Profils égaux** : pas de rôle parent/enfant, tous les profils peuvent importer, gérer et s'entraîner (un code PIN parental pourra être ajouté plus tard si besoin).
+- **Données isolées par profil** : chaque profil possède ses propres listes, sous-listes, boîtes Leitner, points, streak et historique. Les listes ne sont pas partagées entre profils.
+- **Copie entre profils** : bouton « copier cette liste vers un autre profil » pour éviter les doubles imports. La copie concerne uniquement le contenu (mots, sous-listes) ; la progression Leitner et les stats ne sont jamais copiées (mots démarrés en boîte 1 côté destinataire).
+- **Migration automatique** : au premier lancement après mise à jour, les données existantes (schéma v1 mono-utilisateur) migrent automatiquement dans un premier profil créé à la volée (nommé « Moi », renommable), sans perte de listes, boîtes, points, streak ni historique.
+- **Listes d'exemple** : chaque nouveau profil démarre avec les 3 listes d'exemple (vocab EN, vocab DE, verbes irréguliers EN), supprimables.
+- **Changement de profil** : bouton « changer de profil » permanent ; interdit en pleine session d'entraînement (finir ou abandonner la session d'abord). Pas de session simultanée multi-profils.
+- **Persistance** : schéma localStorage v2 versionné : un objet global contenant le tableau des profils (nom, emoji, données complètes) et le profil actif. Migration v1 → v2 dans la couche repository, qui reste isolée pour un futur backend.
+- **Portée des tests** : mettre à jour la couture 4 (persistance repository) : migration v1 → v2 sans perte, isolation stricte des données entre profils, suppression de profil, copie de liste inter-profil (contenu seul, progression vierge).
+- **Hors périmètre de cette itération** : synchronisation multi-appareils, comptes en ligne, authentification, backend. L'export CSV reste le pont entre appareils. Le futur backend (RPi/containers) réutilisera le modèle « utilisateurs + données par utilisateur » défini ici, via la couche repository existante.
