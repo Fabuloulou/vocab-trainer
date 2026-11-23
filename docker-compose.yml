@@ -1,5 +1,6 @@
 services:
   vocab-trainer:
+    container_name: vocab-trainer
     build: .
     ports:
       - "8080:80"

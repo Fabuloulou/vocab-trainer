@@ -1,10 +1,10 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { checkAnswer } from '../../domain/checkAnswer'
+import { checkAnswer, fieldVerdicts } from '../../domain/checkAnswer'
 import { applyResultToState, pointsFor, recordSession } from '../../domain/progress'
 import type { Exercise } from '../../domain/sessionEngine'
 import { createRunner, runnerReducer, type RunnerPhase } from '../../domain/sessionRunner'
-import type { SessionMode, VerbItem } from '../../domain/types'
+import type { SessionMode } from '../../domain/types'
 import { useApp } from '../state/AppContext'
 
 interface SessionLocationState {
@@ -14,7 +14,7 @@ interface SessionLocationState {
 }
 
 export default function SessionPage() {
-  const { state, update } = useApp()
+  const { update } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const session = (location.state ?? null) as SessionLocationState | null
@@ -101,19 +101,15 @@ export default function SessionPage() {
     tryAnswer('ask', () => {
       const ok = checkAnswer(choice, exercise.expected[0])
       record(ok)
-      dispatch({ type: 'submit', ok, expected: exercise.expected })
+      dispatch({ type: 'submit', ok, expected: exercise.expected, input: [choice] })
     })
 
   const onTyping = () =>
     tryAnswer('ask', () => {
       const ok = exercise.expected.every((exp, i) => checkAnswer(typingInputs[i] ?? '', exp))
       record(ok)
-      dispatch({ type: 'submit', ok, expected: exercise.expected })
+      dispatch({ type: 'submit', ok, expected: exercise.expected, input: [...typingInputs] })
     })
-
-  const verbItem = exercise.listType === 'verbs-en'
-    ? (state.lists.find((l) => l.id === exercise.listId)?.items[exercise.itemId] as VerbItem | undefined)
-    : undefined
 
   return (
     <section className={`card exercise-card ${shake ? 'shake' : ''}`} data-testid="exercise-card">
@@ -163,8 +159,13 @@ export default function SessionPage() {
       {exercise.kind === 'qcm' && runner.phase === 'feedback' && !runner.finished && runner.verdict && (
         <div>
           <p className={`feedback ${runner.verdict.ok ? 'ok' : 'ko'}`} data-testid={runner.verdict.ok ? 'feedback-ok' : 'feedback-ko'}>
-            {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : `✘ Mauvaise réponse. C'était : ${runner.verdict.expected[0]}`}
+            {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : '✘ Mauvaise réponse.'}
           </p>
+          {!runner.verdict.ok && (
+            <p className="exercise-expected" data-testid="expected-answers">
+              Tu as saisi : <s data-testid="wrong-input-0">{runner.verdict.input[0]}</s> → Réponse attendue : <strong>{runner.verdict.expected[0]}</strong>
+            </p>
+          )}
           <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
         </div>
       )}
@@ -184,9 +185,6 @@ export default function SessionPage() {
               />
             </label>
           ))}
-          {verbItem && exercise.given && (
-            <p className="muted">Donné : {Object.entries(exercise.given).map(([k, v]) => `${k} = ${v}`).join(', ')}</p>
-          )}
           <div className="btn-row">
             <button className="btn" data-testid="btn-submit" onClick={onTyping}>Valider</button>
           </div>
@@ -196,12 +194,25 @@ export default function SessionPage() {
       {exercise.kind === 'typing' && runner.phase === 'feedback' && !runner.finished && runner.verdict && (
         <div>
           <p className={`feedback ${runner.verdict.ok ? 'ok' : 'ko'}`} data-testid={runner.verdict.ok ? 'feedback-ok' : 'feedback-ko'}>
-            {runner.verdict.ok ? '✔ Bravo, bonne réponse !' : '✘ Mauvaise réponse.'}
+            {runner.verdict.ok
+              ? '✔ Bravo, bonne réponse !'
+              : `✘ Mauvaise réponse (${fieldVerdicts(runner.verdict.input, runner.verdict.expected).filter((v) => !v).length} champ(s) en erreur sur ${runner.verdict.expected.length}).`}
           </p>
           {!runner.verdict.ok && (
-            <p className="exercise-expected" data-testid="expected-answers">
-              Réponses attendues : {exercise.labels.map((l, i) => `${l} = ${runner.verdict?.expected[i]}`).join(' · ')}
-            </p>
+            <div className="exercise-expected" data-testid="expected-answers">
+              {exercise.labels.map((label, i) => {
+                const input = runner.verdict?.input[i] ?? ''
+                const expected = runner.verdict?.expected[i] ?? ''
+                const fieldOk = checkAnswer(input, expected)
+                return fieldOk ? (
+                  <p key={i} className="feedback ok" data-testid={`expected-row-${i}`}>✔ {label} : {input}</p>
+                ) : (
+                  <p key={i} data-testid={`expected-row-${i}`}>
+                    {label} — Tu as saisi : <s data-testid={`wrong-input-${i}`}>{input}</s> → Réponse attendue : <strong data-testid={`expected-value-${i}`}>{expected}</strong>
+                  </p>
+                )
+              })}
+            </div>
           )}
           <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
         </div>

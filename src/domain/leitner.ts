@@ -1,4 +1,4 @@
-import type { Box, LeitnerState } from './types'
+import type { Box, LeitnerState, WordList } from './types'
 
 export const BOX_COUNT = 4
 export const WEAK_BOXES: Box[] = [1, 2]
@@ -17,4 +17,8 @@ export function onFailure(state: LeitnerState, now: string): LeitnerState {
 
 export function isWeak(state: LeitnerState | undefined): boolean {
   return WEAK_BOXES.includes(state?.box ?? 1)
+}
+
+export function hasWeakItems(lists: WordList[], leitner: Record<string, LeitnerState>): boolean {
+  return lists.some((list) => Object.values(list.items).some((item) => isWeak(leitner[item.id])))
 }
