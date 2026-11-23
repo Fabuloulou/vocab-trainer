@@ -83,38 +83,19 @@ Les tests visent le comportement externe aux coutures principales :
 - Les distracteurs du QCM proviennent des autres mots de la même liste pour rester plausibles.
 - Le mode défi chronométré réutilise le même moteur de session avec un chrono et un scoring bonifié.
 
-## Itération suivante
+## Itérations livrées
 
-Instructions pour le développement de la prochaine itération :
+- **Itération 2** (v0.1.x, livrée) :
+  1. mode verbes irréguliers toujours depuis l'infinitif (jamais prétérit/PP en prompt) ;
+  2. affichage côte à côte de la saisie erronée et de la réponse attendue en cas d'erreur ;
+  3. sélection des sous-listes groupée par liste, case « tout cocher » par liste, libellés non ambigus.
+  Ces trois points sont décrits dans le README (« Fonctionnement »).
 
-### 1. Mode verbes irréguliers : toujours partir de l'infinitif
+## Itération en cours (v0.2.0) : gestion des profils
 
-- Dans le mode verbes irréguliers (`verbs-en`), le **point de départ du prompt est toujours l'infinitif** : soit l'infinitif anglais, soit l'infinitif français (tiré au hasard). **Ne jamais commencer un prompt avec le prétérit ou le past participle.**
-- Le prétérit et le past participle **restent bien interrogés** : partant de l'infinitif donné, l'exercice peut demander de saisir le prétérit, le past participle, la traduction, ou une combinaison de ces formes (le nombre exact de champs demandés peut suivre la logique souhaitée, l'essentiel est que l'infinitif soit toujours le champ donné, jamais le prétérit ni le PP).
-- La user story 16 devient donc : « pour un verbe irrégulier, je veux qu'on me propose l'infinitif (EN ou FR au hasard) et que je saisisse le ou les autres champs (prétérit, past participle, traduction), afin de produire les formes utiles en contrôle sans jamais partir du prétérit ou du PP ».
-- Mettre à jour en conséquence le moteur de session, la correction et les tests de la couture 2 (règle : champ donné = infinitif, jamais prétérit/PP).
+Instructions pour le développement de l'itération gestion des profils :
 
-### 2. Affichage des erreurs : saisie erronée + correction
-
-- En cas d'erreur, l'écran de correction doit afficher **côte à côte la saisie erronée de l'utilisateur et la réponse attendue**, par exemple : « Tu as saisi : *become* → Réponse attendue : *become* » avec la saisie erronée barrée ou mise en évidence.
-- Objectif : permettre de comprendre immédiatement la nature de l'erreur (faute d'orthographe, accent manquant, mauvais mot) sans chercher ni se demander ce qui était attendu.
-- Cela complète la user story 18 : voir la bonne réponse ne suffit plus, il faut voir aussi sa propre erreur. Concerne tous les exercices avec saisie (vocabulaire et verbes).
-
-### 3. Clarification de la sélection des sous-listes
-
-Constat utilisateur (capture d'écran) : sur l'écran « Lancer un entraînement », les libellés de cases à cocher du type « Liste 1 : be > bring · Liste 1 : be > bring (10 mots) » sont incompréhensibles, car le nom de la sous-liste est identique au nom de sa liste parente, et le libellé actuel concatène simplement `nom de liste · nom de sous-liste`.
-
-Clarification du fonctionnement actuel (à documenter et à améliorer) :
-
-- Une **liste** (thème, ex. les verbes irréguliers) contient des **sous-listes** correspondant aux leçons, plus une zone « non classés ». Sur l'écran « Lancer un entraînement », chaque case à cocher représente **une sous-liste** (pas une liste) : le premier élément du libellé est le nom de la liste, le second est le nom de la sous-liste.
-- La session pioche uniquement les mots des sous-listes cochées, toutes listes confondues.
-- Améliorations à livrer :
-  - Regrouper visuellement les cases à cocher par liste parente (en-tête de liste, puis ses sous-listes), au lieu d'une liste plate.
-  - Ajouter une case « tout cocher / tout décocher » par liste.
-  - Rendre les libellés non ambigus : ne pas répéter le nom de la liste si la sous-liste porte le même nom, ou forcer des noms de sous-listes distincts et parlants (ex. « Leçon 1 », « Leçon 2 ») à la création ; ne pas réutiliser le nom de la liste comme nom de sous-liste par défaut.
-  - Afficher le type de liste (vocabulaire / verbes) et le nombre de mots, et expliquer en une phrase sous le titre : « Coche une ou plusieurs sous-listes ; l'entraînement piochera uniquement leurs mots ».
-
-### 4. Gestion des profils utilisateurs (multi-profils)
+### Gestion des profils utilisateurs (multi-profils)
 
 Décisions validées pour cette itération :
 
