@@ -59,7 +59,7 @@ L'export produit exactement ce format (par liste ou par sous-liste).
   - **Niveau 1 — « Je ne sais pas »** : flashcard. « Je ne sais pas » compte l'exercice comme faux et affiche la réponse attendue ; « Voir la réponse » puis « J'avais bon / J'avais faux » restent disponibles.
   - **Niveau 2 — QCM** : 4 choix dont la bonne réponse, distracteurs pris dans la même liste (retombe en saisie si la liste n'a qu'un seul mot).
   - **Niveau 3 — Saisie écrite** : la traduction se tape au clavier.
-  Vocabulaire interrogé dans les deux directions ; verbes irréguliers : **toujours à l'écrit** (niveau 3), le prompt part **toujours de l'infinitif** (EN ou FR au hasard), les 3 autres champs (prétérit, participe passé, traduction) sont à saisir.
+  Vocabulaire interrogé dans les deux directions **en alternance** : FR→langue puis langue→FR, jamais deux prompts de suite dans la même langue (direction de départ tirée au hasard) ; verbes irréguliers : **toujours à l'écrit** (niveau 3), le prompt part **toujours de l'infinitif** (EN ou FR au hasard), les 3 autres champs (prétérit, participe passé, traduction) sont à saisir.
   Un même mot n'apparaît qu'une fois par session.
 - **Correction** : insensible à la casse, stricte sur les accents/umlauts (`groß` ≠ `gross`).
   En cas d'erreur, la saisie erronée (barrée) et la réponse attendue s'affichent côte à côte.

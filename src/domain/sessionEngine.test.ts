@@ -55,6 +55,32 @@ describe('moteur de session', () => {
     expect(dirs).toEqual(new Set(['fr-to-target', 'target-to-fr']))
   })
 
+  it('alterne les directions : jamais deux prompts consécutifs dans la même langue, départ aléatoire', () => {
+    const list = makeVocabList('l1', words20)
+    const starts = new Set<string>()
+    for (let seed = 1; seed <= 12; seed++) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, rng: mulberry32(seed) })
+      const dirs = ex.map((e) => e.direction as string)
+      expect(new Set(dirs).size).toBe(2)
+      for (let i = 1; i < dirs.length; i++) {
+        expect(dirs[i]).not.toBe(dirs[i - 1])
+      }
+      starts.add(dirs[0])
+    }
+    expect(starts.size).toBe(2)
+  })
+
+  it('l alternance de directions s applique aussi quand un niveau est choisi', () => {
+    const list = makeVocabList('l1', words20)
+    for (const level of [1, 2, 3] as const) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level, rng: mulberry32(3) })
+      const dirs = ex.map((e) => e.direction as string)
+      for (let i = 1; i < dirs.length; i++) {
+        expect(dirs[i]).not.toBe(dirs[i - 1])
+      }
+    }
+  })
+
   it('répartit les 3 mécanismes d exercice', () => {
     const list = makeVocabList('l1', words20)
     const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, rng: mulberry32(11) })

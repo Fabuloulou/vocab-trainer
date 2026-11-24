@@ -59,6 +59,10 @@ function verbPrompt(item: VerbItem, givenField: VerbField): string {
   return `${VERB_LABELS[givenField]} : ${item[givenField]}`
 }
 
+function otherDirection(direction: Direction): Direction {
+  return direction === 'fr-to-target' ? 'target-to-fr' : 'fr-to-target'
+}
+
 function buildExercise(
   item: Item,
   list: WordList,
@@ -66,6 +70,7 @@ function buildExercise(
   index: number,
   poolByList: Map<string, Item[]>,
   level?: DifficultyLevel,
+  forcedDirection?: Direction | null,
 ): Exercise {
   const isVerb = list.type === 'verbs-en'
   const kind: ExerciseKind = isVerb ? 'typing' : level ? LEVEL_KIND[level] : pick(rng, KINDS)
@@ -87,7 +92,7 @@ function buildExercise(
   }
 
   const vocab = item as VocabItem
-  const direction = pick(rng, DIRECTIONS)
+  const direction = forcedDirection ?? pick(rng, DIRECTIONS)
   const { prompt, answer } = vocabFields(vocab, direction)
 
   if (kind === 'qcm') {
@@ -142,7 +147,18 @@ export function buildSession(options: BuildSessionOptions): Exercise[] {
     return boxA - boxB
   })
 
-  return ordered.map((p, i) => buildExercise(p.item, p.list, rng, i, poolByList, options.level))
+  const startDirection = pick(rng, DIRECTIONS)
+  return ordered.map((p, i) =>
+    buildExercise(
+      p.item,
+      p.list,
+      rng,
+      i,
+      poolByList,
+      options.level,
+      p.list.type === 'verbs-en' ? null : i % 2 === 0 ? startDirection : otherDirection(startDirection),
+    ),
+  )
 }
 
 export function challengeSeconds(exerciseCount: number): number {

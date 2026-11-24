@@ -51,7 +51,7 @@ Une web app responsive (PC, tablette, téléphone), en français, ludique et mot
   - Profil de progression : points, streak (date du dernier entraînement, compteur), historique des sessions (10 dernières conservées).
 - **Import** : deux entrées (upload CSV, copier-coller) vers le même parseur : `;`, UTF-8, en-tête obligatoire. Vocab : `fr;trad;liste`. Verbes : `infinitive;preterite;past_participle;fr;liste`. Aperçu tabulaire avec lignes en erreur signalées avant validation ; import cumulatif possible.
 - **Export** : génération CSV au même format, par liste ou par sous-liste, téléchargé via blob.
-- **Moteur de session** : sélection des sous-listes (multi-coche) ou "mots faibles" (boîtes 1-2). Tirage priorisant les boîtes basses, puis aléatoire. Répartition aléatoire des mécanismes (flashcard, QCM avec distracteurs issus de la même liste, saisie). Direction mélangée pour le vocabulaire ; pour les verbes, un champ sur quatre donné au hasard, les trois autres demandés. Un item ne peux pas être interrogé deux fois dans la même session.
+- **Moteur de session** : sélection des sous-listes (multi-coche) ou "mots faibles" (boîtes 1-2). Tirage priorisant les boîtes basses, puis aléatoire. Répartition aléatoire des mécanismes (flashcard, QCM avec distracteurs issus de la même liste, saisie). Direction **alternée** pour le vocabulaire (FR→langue puis langue→FR, jamais deux prompts de suite dans la même langue, départ aléatoire) ; pour les verbes, un champ sur quatre donné au hasard, les trois autres demandés. Un item ne peux pas être interrogé deux fois dans la même session.
 - **Correction** : normalisation insensible à la casse, stricte sur les diacritiques/umlauts ; tolérance micro-typo à évaluer (le "gross/groß" reste faux). Affichage de la réponse attendue en cas d'erreur.
 - **UI** : design responsive mobile-first, en français. Écrans : Accueil (streak, maîtrise, lancement rapide), Listes (gestion, import/export, sous-listes), Session d'entraînement, Résultats, Stats. Ton ludique : couleurs franches, feedback visuel immédiat (confettis sur série, secousse sur erreur).
 - **Évolution comptes** : la couche repository et le routing de l'app laissent la place à une authentification et un backend sans restructuration majeure.
@@ -120,7 +120,7 @@ Ajustement demandé pour la v0.2.0 : au lieu d'un mélange aléatoire des mécan
 
 Règles :
 
-- Le niveau s'applique au vocabulaire anglais (`vocab-en`) et allemand (`vocab-de`), interrogé dans les deux directions (FR→langue et langue→FR mélangées comme avant).
+- Le niveau s'applique au vocabulaire anglais (`vocab-en`) et allemand (`vocab-de`). Les prompts **alternent entre le français et la langue étrangère** (FR→langue, puis langue→FR, etc. — jamais deux prompts consécutifs dans la même langue), la direction de départ étant tirée au hasard.
 - Les **verbes irréguliers restent toujours en saisie** (équivalent niveau 3), quel que soit le niveau choisi : le prompt part toujours de l'infinitif (EN ou FR au hasard), les 3 autres champs sont à saisir.
 - Quand un niveau est choisi, le mécanisme n'est plus tiré au hasard ; sans niveau explicite (appels internes du moteur), le mélange aléatoire flashcard/QCM/saisie reste le comportement par défaut.
 - Mise à jour en conséquence du moteur de session (`buildSession` accepte `level`), du runner (action « dont-know » pour le niveau 1) et des tests de la couture 2.
