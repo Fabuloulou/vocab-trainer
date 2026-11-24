@@ -120,6 +120,37 @@ describe('sessionRunner', () => {
     expect(f.phase).toBe('revealed')
   })
 
+  it('submit faux enregistre une erreur dans mistakes (prompt, labels, saisie, attendue), submit bon non', () => {
+    const exs = exercises(3)
+    let s = createRunner(exs, 'classic')
+    s = runnerReducer(exs, s, { type: 'submit', ok: false, expected: exs[0].expected, input: ['became'] })
+    expect(s.mistakes).toEqual([
+      { itemId: exs[0].itemId, prompt: exs[0].prompt, labels: exs[0].labels, expected: exs[0].expected, input: ['became'] },
+    ])
+    s = runnerReducer(exs, s, { type: 'next' })
+    s = runnerReducer(exs, s, { type: 'submit', ok: true, expected: exs[1].expected, input: ['word 1'] })
+    expect(s.mistakes).toHaveLength(1)
+  })
+
+  it('dont-know et answer faux (flashcard) enregistrent aussi une erreur', () => {
+    const exs = exercises(2)
+    const flash = [{ ...exs[0], kind: 'flashcard' as const }]
+    let f = createRunner(flash, 'classic')
+    f = runnerReducer(flash, f, { type: 'dont-know' })
+    expect(f.mistakes).toHaveLength(1)
+    expect(f.mistakes[0].input).toEqual([''])
+    expect(f.mistakes[0].expected).toEqual(flash[0].expected)
+    f = runnerReducer(flash, f, { type: 'next' })
+    const flash2 = [{ ...exs[1], kind: 'flashcard' as const }]
+    let g = createRunner(flash2, 'classic')
+    g = runnerReducer(flash2, g, { type: 'reveal' })
+    g = runnerReducer(flash2, g, { type: 'answer', ok: false })
+    expect(g.mistakes).toHaveLength(1)
+    expect(g.mistakes[0].input).toEqual([])
+    g = runnerReducer(flash2, g, { type: 'answer', ok: true })
+    expect(g.mistakes).toHaveLength(1)
+  })
+
   it('next en phase ask est ignoré', () => {
     const exs = exercises(2)
     let s = createRunner(exs, 'classic')

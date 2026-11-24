@@ -232,6 +232,9 @@ tr.row-error td { background: #fde3e4; color: var(--ko); }
 }
 .emoji-btn.selected { border-color: var(--primary); background: #e7dfff; }
 
+.error-list { list-style: none; padding: 0; margin: 0.6rem 0 0; display: grid; gap: 0.7rem; }
+.error-list li { border: 1px solid #f3c6c8; background: #fff5f5; border-radius: var(--radius); padding: 0.55rem 0.8rem; }
+
 .level-picker {
   border-top: 1px dashed #ddd6f3;
   margin-top: 0.8rem;

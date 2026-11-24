@@ -64,6 +64,7 @@ L'export produit exactement ce format (par liste ou par sous-liste).
 - **Correction** : insensible à la casse, stricte sur les accents/umlauts (`groß` ≠ `gross`).
   En cas d'erreur, la saisie erronée (barrée) et la réponse attendue s'affichent côte à côte.
 - **Leitner 4 boîtes** : réussite = monte d'une boîte, échec = redescend. Tirage priorisant les boîtes basses.
+- **Récapitulatif des erreurs** : en fin de session, l'écran Résultats liste chaque erreur de la session (prompt, saisie erronée barrée → réponse attendue, champ par champ pour les verbes), pour les réviser et mieux les mémoriser.
 - **Motivation** : +10 points par bonne réponse (+5 bonus en mode défi chronométré), streak sur jours
   calendaires (fuseau Europe/Paris), maîtrise % par liste, historique des 10 dernières sessions.
 - **Listes d'exemple** livrées au premier lancement et dans chaque nouveau profil, supprimables depuis « Mes listes ».

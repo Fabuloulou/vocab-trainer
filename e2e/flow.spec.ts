@@ -69,6 +69,9 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
 
   await expect(page.getByTestId('results-card')).toBeVisible()
   await expect(page.getByTestId('results-score')).toContainText('/ 4')
+  await expect(page.getByTestId('errors-recap')).toBeVisible()
+  await expect(page.locator('[data-testid^="error-row-"]')).toHaveCount(4)
+  await expect(page.getByTestId('errors-recap')).toContainText('Réponse attendue')
 
   await page.getByTestId('results-stats').click()
   await expect(page.getByTestId('history-list')).toBeVisible()
@@ -210,9 +213,15 @@ test('profils : création, sélection, renommage, isolation des données et copi
 
   const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem('vocab-trainer:state') ?? '{}'))
   expect(stored.profiles).toHaveLength(2)
-  const copies = stored.profiles[0].lists.filter((l: { name: string }) => l.name === stored.profiles[1].lists[0].name)
-  expect(copies).toHaveLength(1)
-  expect(Object.keys(stored.profiles[0].leitner ?? {})).toHaveLength(0)
+  const moi = stored.profiles[0]
+  const lucas = stored.profiles[1]
+  expect(moi.lists).toHaveLength(4)
+  const copy = moi.lists[3]
+  expect(copy.name).toBe(lucas.lists[0].name)
+  expect(copy.id).not.toBe(lucas.lists[0].id)
+  expect(Object.keys(copy.items)).toHaveLength(Object.keys(lucas.lists[0].items).length)
+  expect(Object.keys(copy.items)).not.toEqual(expect.arrayContaining(Object.keys(lucas.lists[0].items)))
+  expect(Object.keys(moi.leitner ?? {})).toHaveLength(0)
 })
 
 test('suppression d’un profil après confirmation', async ({ page }) => {
@@ -228,8 +237,9 @@ test('suppression d’un profil après confirmation', async ({ page }) => {
 
 test('niveau 1 (défaut) : « Je ne sais pas » affiche la réponse attendue et compte comme faux', async ({ page }) => {
   await expect(page.getByTestId('level-1')).toBeChecked()
-  await expect(page.getByTestId('start-weak')).toBeEnabled()
-  await page.getByTestId('start-weak').click()
+  const group = page.locator('[data-testid^="list-group-"]').first()
+  await group.getByTestId(/^select-sublist-/).first().check()
+  await page.getByTestId('start-session').click()
   await expect(page.getByTestId('exercise-card')).toBeVisible()
   await expect(page.getByTestId('btn-dont-know')).toBeVisible()
   await page.getByTestId('btn-dont-know').click()

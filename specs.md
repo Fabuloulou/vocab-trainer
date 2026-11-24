@@ -124,3 +124,12 @@ Règles :
 - Les **verbes irréguliers restent toujours en saisie** (équivalent niveau 3), quel que soit le niveau choisi : le prompt part toujours de l'infinitif (EN ou FR au hasard), les 3 autres champs sont à saisir.
 - Quand un niveau est choisi, le mécanisme n'est plus tiré au hasard ; sans niveau explicite (appels internes du moteur), le mélange aléatoire flashcard/QCM/saisie reste le comportement par défaut.
 - Mise à jour en conséquence du moteur de session (`buildSession` accepte `level`), du runner (action « dont-know » pour le niveau 1) et des tests de la couture 2.
+
+### Récapitulatif des erreurs en fin de session
+
+Ajustement demandé pour la v0.2.0 :
+
+- À la fin de **chaque session**, l'écran Résultats affiche un **récapitulatif des erreurs** : pour chaque exercice raté, le prompt, la saisie de l'utilisateur (barrée) et la réponse attendue — champ par champ pour les verbes (prétérit, participe passé, traduction).
+- « Je ne sais pas » (niveau 1) et « J'avais faux » (flashcard) comptent comme des erreurs et figurent au récapitulatif ; les bonnes réponses non.
+- Les erreurs sont collectées par le runner (`mistakes` dans l'état du runner : itemId, prompt, labels, attendues, saisie) et transmises à la page Résultats via l'état de navigation.
+- Si la session ne comporte aucune erreur, le récapitulatif n'est pas affiché.

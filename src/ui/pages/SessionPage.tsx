@@ -31,6 +31,7 @@ export default function SessionPage() {
   const [goodStreak, setGoodStreak] = useState(0)
   const [shake, setShake] = useState(false)
   const [typingInputs, setTypingInputs] = useState<string[]>([])
+  const [typingIndex, setTypingIndex] = useState(runner.index)
   const finishCalledRef = useRef(false)
   const answerLockRef = useRef(false)
 
@@ -41,12 +42,13 @@ export default function SessionPage() {
   const exercise = exercises[runner.index]
 
   useEffect(() => {
-    if (!session) navigate('/', { replace: true })
+    if (!session) navigate('/accueil', { replace: true })
   }, [session, navigate])
 
-  useEffect(() => {
+  if (typingIndex !== runner.index) {
+    setTypingIndex(runner.index)
     setTypingInputs(exercise ? exercise.expected.map(() => '') : [])
-  }, [runner.index, exercise])
+  }
 
   useEffect(() => {
     if (mode !== 'challenge' || runner.finished) return
@@ -70,10 +72,10 @@ export default function SessionPage() {
       }),
     }))
     navigate('/resultats', {
-      state: { score, total: runner.results.length, pointsEarned, mode, label: session?.label ?? '' },
+      state: { score, total: runner.results.length, pointsEarned, mode, label: session?.label ?? '', mistakes: runner.mistakes },
       replace: true,
     })
-  }, [runner.finished, runner.results, mode, exercises.length, updateActive, navigate, session?.label])
+  }, [runner.finished, runner.results, runner.mistakes, mode, exercises.length, updateActive, navigate, session?.label])
 
   if (!session || !exercise) return null
 
