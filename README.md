@@ -4,7 +4,7 @@ Web app responsive (PC, tablette, téléphone), en français, pour s'entraîner 
 d'anglais et d'allemand et aux verbes irréguliers anglais. Conçue d'après `specs.md`.
 
 - **Stack** : React 18 + Vite + TypeScript, build statique servi par nginx (image Docker multi-stage, compatible ARM/Raspberry Pi 4).
-- **Persistance v1** : `localStorage` uniquement, via une couche repository isolée et un schéma versionné (migrations prêtes pour un futur backend/comptes sur VPS).
+- **Persistance (schéma v2)** : `localStorage` uniquement, via une couche repository isolée et un schéma versionné. L'objet stocké est global : `{ profils, profilActif }` — chaque profil embarque ses propres listes, boîtes Leitner, points, streak et historique (migrations prêtes pour un futur backend/comptes sur VPS).
 
 ## Démarrage rapide (dev)
 
@@ -55,15 +55,20 @@ L'export produit exactement ce format (par liste ou par sous-liste).
 ## Fonctionnement
 
 - **Sessions** : coche une ou plusieurs sous-listes, regroupées par liste sur l'accueil (case « tout cocher » par liste), ou « Mes mots faibles » (boîtes Leitner 1-2). L'entraînement pioche uniquement les mots des sous-listes cochées.
-  Mécanismes mélangés aléatoirement : flashcard, QCM (distracteurs pris dans la même liste) et saisie clavier.
-  Vocabulaire interrogé dans les deux directions ; verbes irréguliers : le prompt part **toujours de l'infinitif** (EN ou FR au hasard), les 3 autres champs (prétérit, participe passé, traduction) sont à saisir.
+  **Trois niveaux de difficulté** pour le vocabulaire FR→EN / FR→DE, choisis au lancement de la session :
+  - **Niveau 1 — « Je ne sais pas »** : flashcard. « Je ne sais pas » compte l'exercice comme faux et affiche la réponse attendue ; « Voir la réponse » puis « J'avais bon / J'avais faux » restent disponibles.
+  - **Niveau 2 — QCM** : 4 choix dont la bonne réponse, distracteurs pris dans la même liste (retombe en saisie si la liste n'a qu'un seul mot).
+  - **Niveau 3 — Saisie écrite** : la traduction se tape au clavier.
+  Vocabulaire interrogé dans les deux directions **en alternance** : FR→langue puis langue→FR, jamais deux prompts de vocabulaire de suite dans la même langue (les verbes intercalés ne comptent pas ; direction de départ tirée au hasard) ; verbes irréguliers : **toujours à l'écrit** (niveau 3), le prompt part **toujours de l'infinitif** (EN ou FR au hasard), les 3 autres champs (prétérit, participe passé, traduction) sont à saisir.
   Un même mot n'apparaît qu'une fois par session.
 - **Correction** : insensible à la casse, stricte sur les accents/umlauts (`groß` ≠ `gross`).
   En cas d'erreur, la saisie erronée (barrée) et la réponse attendue s'affichent côte à côte.
 - **Leitner 4 boîtes** : réussite = monte d'une boîte, échec = redescend. Tirage priorisant les boîtes basses.
+- **Récapitulatif des erreurs** : en fin de session, l'écran Résultats liste chaque erreur de la session (prompt, saisie erronée barrée → réponse attendue, champ par champ pour les verbes), pour les réviser et mieux les mémoriser.
 - **Motivation** : +10 points par bonne réponse (+5 bonus en mode défi chronométré), streak sur jours
   calendaires (fuseau Europe/Paris), maîtrise % par liste, historique des 10 dernières sessions.
-- **Listes d'exemple** livrées au premier lancement, supprimables depuis « Mes listes ».
+- **Listes d'exemple** livrées au premier lancement et dans chaque nouveau profil, supprimables depuis « Mes listes ».
+- **Profils (v0.2.0)** : multi-profils locaux, sans compte. À l'ouverture, un écran de sélection permet de choisir un profil ou d'en créer un (nom obligatoire + emoji avatar), de le renommer ou de le supprimer (avec confirmation). Chaque profil a ses **données isolées** : listes, boîtes Leitner, points, streak, historique. Le bouton « Changer de profil » dans l'en-tête est indisponible en pleine session d'entraînement. Depuis « Mes listes », « Copier vers un autre profil » duplique une liste (contenu et sous-listes uniquement — les mots copiés repartent en boîte 1, aucune progression n'est copiée ; la copie n'est pas une liste d'exemple). Au premier lancement après la mise à jour, les données existantes (schéma v1) migrent automatiquement dans un profil « Moi » sans perte.
 
 ## Architecture
 
@@ -71,8 +76,9 @@ L'export produit exactement ce format (par liste ou par sous-liste).
 src/
   domain/    logique pure testable (types, leitner, correction, moteur de session, progression/streak)
   data/      parseur/export CSV, import cumulatif, repository localStorage + migrations, seed
-  ui/        provider d'état + écrans (Accueil, Listes, Session, Résultats, Stats)
+  ui/        provider d'état + écrans (Profils, Accueil, Listes, Session, Résultats, Stats)
 ```
 
 La couche `data/repository.ts` est le seul point de contact avec le stockage : remplacer
-`LocalStorageRepository` par un client API préparerait la v2 (comptes, synchro multi-appareils).
+`LocalStorageRepository` par un client API préparerait l'évolution vers des comptes et la
+synchro multi-appareils (backend VPS), en réutilisant le modèle « profils + données par profil » du schéma v2.

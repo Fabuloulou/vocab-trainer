@@ -55,6 +55,54 @@ describe('moteur de session', () => {
     expect(dirs).toEqual(new Set(['fr-to-target', 'target-to-fr']))
   })
 
+  it('alterne les directions : jamais deux prompts consécutifs dans la même langue, départ aléatoire', () => {
+    const list = makeVocabList('l1', words20)
+    const starts = new Set<string>()
+    for (let seed = 1; seed <= 12; seed++) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, rng: mulberry32(seed) })
+      const dirs = ex.map((e) => e.direction as string)
+      expect(new Set(dirs).size).toBe(2)
+      for (let i = 1; i < dirs.length; i++) {
+        expect(dirs[i]).not.toBe(dirs[i - 1])
+      }
+      starts.add(dirs[0])
+    }
+    expect(starts.size).toBe(2)
+  })
+
+  it('l alternance ne compte que les exercices de vocabulaire (les verbes intercalés ne décalent pas)', () => {
+    const vocab = makeVocabList('l1', words20)
+    const verbs = Array.from({ length: 10 }, (_, i) => [`v${i}`, `p${i}`, `pp${i}`, `fr ${i}`] as [string, string, string, string])
+    const verbList = makeVerbList('lv', verbs)
+    const ex = buildSession({
+      lists: [vocab, verbList],
+      selection: [
+        { listId: 'l1', subListId: 'l1-s1' },
+        { listId: 'lv', subListId: 'lv-s1' },
+      ],
+      leitner: {},
+      rng: mulberry32(17),
+    })
+    expect(ex.some((e) => e.listType === 'verbs-en')).toBe(true)
+    const dirs = ex.filter((e) => e.listType !== 'verbs-en').map((e) => e.direction as string)
+    expect(dirs.length).toBe(20)
+    expect(new Set(dirs).size).toBe(2)
+    for (let i = 1; i < dirs.length; i++) {
+      expect(dirs[i]).not.toBe(dirs[i - 1])
+    }
+  })
+
+  it('l alternance de directions s applique aussi quand un niveau est choisi', () => {
+    const list = makeVocabList('l1', words20)
+    for (const level of [1, 2, 3] as const) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level, rng: mulberry32(3) })
+      const dirs = ex.map((e) => e.direction as string)
+      for (let i = 1; i < dirs.length; i++) {
+        expect(dirs[i]).not.toBe(dirs[i - 1])
+      }
+    }
+  })
+
   it('répartit les 3 mécanismes d exercice', () => {
     const list = makeVocabList('l1', words20)
     const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, rng: mulberry32(11) })
@@ -175,6 +223,43 @@ describe('moteur de session', () => {
     }
     const ex = buildSession({ lists: [l1, l2], selection: [], leitner, weakOnly: true, rng: mulberry32(6) })
     expect(ex.map((e) => e.itemId).sort()).toEqual(['l1-w0', 'l2-w0'])
+  })
+
+  it('niveau 1 : tout le vocabulaire est en flashcard (« je ne sais pas »)', () => {
+    const list = makeVocabList('l1', words20)
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 1, rng: mulberry32(1) })
+    expect(ex).toHaveLength(20)
+    expect(ex.every((e) => e.kind === 'flashcard')).toBe(true)
+  })
+
+  it('niveau 2 : tout le vocabulaire est en QCM', () => {
+    const list = makeVocabList('l1', words20)
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 2, rng: mulberry32(1) })
+    expect(ex).toHaveLength(20)
+    expect(ex.every((e) => e.kind === 'qcm' && e.choices !== null)).toBe(true)
+  })
+
+  it('niveau 3 : tout le vocabulaire est en saisie écrite', () => {
+    const list = makeVocabList('l1', words20)
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 3, rng: mulberry32(1) })
+    expect(ex).toHaveLength(20)
+    expect(ex.every((e) => e.kind === 'typing' && e.choices === null)).toBe(true)
+  })
+
+  it('les verbes restent en saisie quel que soit le niveau choisi', () => {
+    const verbs = Array.from({ length: 8 }, (_, i) => [`v${i}`, `p${i}`, `pp${i}`, `fr ${i}`] as [string, string, string, string])
+    const list = makeVerbList('lv', verbs)
+    for (const level of [1, 2, 3] as const) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'lv', subListId: 'lv-s1' }], leitner: {}, level, rng: mulberry32(9) })
+      expect(ex.every((e) => e.kind === 'typing')).toBe(true)
+    }
+  })
+
+  it('niveau 2 avec une liste à un seul élément retombe en saisie (pas de distracteur)', () => {
+    const list = makeVocabList('l1', [['seul', 'only']])
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 2, rng: mulberry32(1) })
+    expect(ex[0].kind).toBe('typing')
+    expect(ex[0].choices).toBeNull()
   })
 
   it('est reproductible avec la même graine de PRNG', () => {

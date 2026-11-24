@@ -33,16 +33,20 @@ export function checkSubName(list: WordList, name: string, excludeSubListId: str
 }
 
 export default function ListsPage() {
-  const { state, update } = useApp()
+  const { state, activeProfile, updateActive, copyListToProfile } = useApp()
   const [type, setType] = useState<ListType>('vocab-en')
   const [listName, setListName] = useState('')
   const [existingListId, setExistingListId] = useState('')
   const [csvText, setCsvText] = useState('')
   const [preview, setPreview] = useState<(ParseResult & { type: ListType }) | null>(null)
   const [importInfo, setImportInfo] = useState('')
+  const [copyInfo, setCopyInfo] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const existingOfType = useMemo(() => state.lists.filter((l) => l.type === type), [state.lists, type])
+  const existingOfType = useMemo(
+    () => (activeProfile ? activeProfile.lists.filter((l) => l.type === type) : []),
+    [activeProfile, type],
+  )
 
   const onPreview = () => {
     setPreview({ ...parseCsv(csvText, type), type })
@@ -50,8 +54,8 @@ export default function ListsPage() {
   }
 
   const onCommit = () => {
-    if (!preview) return
-    const target = existingListId ? state.lists.find((l) => l.id === existingListId) : undefined
+    if (!preview || !activeProfile) return
+    const target = existingListId ? activeProfile.lists.find((l) => l.id === existingListId) : undefined
     const baseList: WordList = target ?? {
       id: newId('list'),
       name: listName.trim() || TYPE_LABELS[type],
@@ -62,10 +66,10 @@ export default function ListsPage() {
       unclassifiedItemIds: [],
     }
     const outcome = applyParsedItems(baseList, preview.items)
-    update((s) =>
+    updateActive((p) =>
       target
-        ? { ...s, lists: s.lists.map((l) => (l.id === target.id ? outcome.list : l)) }
-        : { ...s, lists: [...s.lists, outcome.list] },
+        ? { ...p, lists: p.lists.map((l) => (l.id === target.id ? outcome.list : l)) }
+        : { ...p, lists: [...p.lists, outcome.list] },
     )
     setImportInfo(
       `Import terminé : ${outcome.added} mot(s) ajouté(s)` +
@@ -81,18 +85,18 @@ export default function ListsPage() {
   }
 
   const deleteExampleLists = () => {
-    update((s) => ({ ...s, lists: s.lists.filter((l) => !l.isExample) }))
+    updateActive((p) => ({ ...p, lists: p.lists.filter((l) => !l.isExample) }))
   }
 
   const createSubList = (listId: string, name: string): SubNameCheck => {
-    const list = state.lists.find((l) => l.id === listId)
+    const list = activeProfile?.lists.find((l) => l.id === listId)
     if (!list) return 'empty'
     const check = checkSubName(list, name)
     if (check !== 'ok') return check
     const trimmed = name.trim()
-    update((s) => ({
-      ...s,
-      lists: s.lists.map((l) =>
+    updateActive((p) => ({
+      ...p,
+      lists: p.lists.map((l) =>
         l.id === listId ? { ...l, subLists: [...l.subLists, { id: newId('sub'), name: trimmed, itemIds: [] }] } : l,
       ),
     }))
@@ -100,14 +104,14 @@ export default function ListsPage() {
   }
 
   const renameSubList = (listId: string, subListId: string, name: string): SubNameCheck => {
-    const list = state.lists.find((l) => l.id === listId)
+    const list = activeProfile?.lists.find((l) => l.id === listId)
     if (!list) return 'empty'
     const check = checkSubName(list, name, subListId)
     if (check !== 'ok') return check
     const trimmed = name.trim()
-    update((s) => ({
-      ...s,
-      lists: s.lists.map((l) =>
+    updateActive((p) => ({
+      ...p,
+      lists: p.lists.map((l) =>
         l.id === listId
           ? { ...l, subLists: l.subLists.map((sub) => (sub.id === subListId ? { ...sub, name: trimmed } : sub)) }
           : l,
@@ -117,9 +121,9 @@ export default function ListsPage() {
   }
 
   const deleteSubList = (listId: string, subListId: string) => {
-    update((s) => ({
-      ...s,
-      lists: s.lists.map((l) => {
+    updateActive((p) => ({
+      ...p,
+      lists: p.lists.map((l) => {
         if (l.id !== listId) return l
         const sub = l.subLists.find((x) => x.id === subListId)
         if (!sub) return l
@@ -133,9 +137,9 @@ export default function ListsPage() {
   }
 
   const moveItem = (listId: string, itemId: string, targetSubListId: string) => {
-    update((s) => ({
-      ...s,
-      lists: s.lists.map((l) => {
+    updateActive((p) => ({
+      ...p,
+      lists: p.lists.map((l) => {
         if (l.id !== listId) return l
         const nextSubs = l.subLists.map((sub) => ({
           ...sub,
@@ -154,9 +158,9 @@ export default function ListsPage() {
   }
 
   const deleteItem = (listId: string, itemId: string) => {
-    update((s) => ({
-      ...s,
-      lists: s.lists.map((l) => {
+    updateActive((p) => ({
+      ...p,
+      lists: p.lists.map((l) => {
         if (l.id !== listId) return l
         const items = { ...l.items }
         delete items[itemId]
@@ -167,23 +171,39 @@ export default function ListsPage() {
           unclassifiedItemIds: l.unclassifiedItemIds.filter((id) => id !== itemId),
         }
       }),
-      leitner: Object.fromEntries(Object.entries(s.leitner).filter(([id]) => id !== itemId)),
+      leitner: Object.fromEntries(Object.entries(p.leitner).filter(([id]) => id !== itemId)),
     }))
   }
 
   const deleteList = (listId: string) => {
-    update((s) => {
-      const list = s.lists.find((l) => l.id === listId)
+    updateActive((p) => {
+      const list = p.lists.find((l) => l.id === listId)
       const itemIds = list ? Object.keys(list.items) : []
       return {
-        ...s,
-        lists: s.lists.filter((l) => l.id !== listId),
-        leitner: Object.fromEntries(Object.entries(s.leitner).filter(([id]) => !itemIds.includes(id))),
+        ...p,
+        lists: p.lists.filter((l) => l.id !== listId),
+        leitner: Object.fromEntries(Object.entries(p.leitner).filter(([id]) => !itemIds.includes(id))),
       }
     })
   }
 
-  const hasExamples = state.lists.some((l) => l.isExample)
+  const hasExamples = activeProfile?.lists.some((l) => l.isExample) ?? false
+
+  const otherProfiles = state.profiles
+    .filter((p) => p.id !== state.activeProfileId)
+    .map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }))
+
+  const handleCopyList = (listId: string, targetId: string) => {
+    const ok = copyListToProfile(listId, targetId)
+    const target = state.profiles.find((p) => p.id === targetId)
+    setCopyInfo(
+      ok
+        ? `Liste copiée dans le profil « ${target?.name ?? ''} » : contenu seul, les mots repartent en boîte 1.`
+        : 'Copie impossible : profil ou liste introuvable.',
+    )
+  }
+
+  if (!activeProfile) return null
 
   return (
     <div>
@@ -272,10 +292,14 @@ export default function ListsPage() {
         </section>
       )}
 
-      {state.lists.map((list) => (
+      {copyInfo && <p className="feedback ok" data-testid="copy-info">{copyInfo}</p>}
+
+      {activeProfile.lists.map((list) => (
         <ListCard
           key={list.id}
           list={list}
+          copyTargets={otherProfiles}
+          onCopyList={handleCopyList}
           onExportAll={() => downloadCsv(`${slugify(list.name)}.csv`, listToCsv(list))}
           onExportSub={(subId, subName) => downloadCsv(`${slugify(list.name)}-${slugify(subName)}.csv`, listToCsv(list, subId))}
           onDeleteList={() => deleteList(list.id)}
@@ -290,8 +314,41 @@ export default function ListsPage() {
   )
 }
 
+function CopyListControl(props: {
+  listId: string
+  targets: { id: string; name: string; emoji: string }[]
+  onCopy: (listId: string, targetId: string) => void
+}) {
+  const [targetId, setTargetId] = useState(props.targets[0]?.id ?? '')
+  if (props.targets.length === 0) return null
+  return (
+    <>
+      <select
+        data-testid={`copy-target-${props.listId}`}
+        value={targetId}
+        aria-label="Copier cette liste vers un autre profil"
+        onChange={(e) => setTargetId(e.target.value)}
+      >
+        {props.targets.map((t) => (
+          <option key={t.id} value={t.id}>{t.emoji} {t.name}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="btn secondary small"
+        data-testid={`copy-list-${props.listId}`}
+        onClick={() => props.onCopy(props.listId, targetId)}
+      >
+        📋 Copier vers un autre profil
+      </button>
+    </>
+  )
+}
+
 function ListCard(props: {
   list: WordList
+  copyTargets: { id: string; name: string; emoji: string }[]
+  onCopyList: (listId: string, targetId: string) => void
   onExportAll: () => void
   onExportSub: (subId: string, subName: string) => void
   onDeleteList: () => void
@@ -346,6 +403,7 @@ function ListCard(props: {
       <div className="btn-row">
         <h2 style={{ margin: 0, flex: 1 }}>{list.name} <span className="muted">· {TYPE_LABELS[list.type]} · {total} mot(s){list.isExample ? ' · exemple' : ''}</span></h2>
         <button className="btn secondary small" data-testid={`export-list-${list.id}`} onClick={props.onExportAll}>⬇ Export CSV</button>
+        <CopyListControl listId={list.id} targets={props.copyTargets} onCopy={props.onCopyList} />
         <button className="btn danger small" data-testid={`delete-list-${list.id}`} onClick={props.onDeleteList}>Supprimer</button>
       </div>
 

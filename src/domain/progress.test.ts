@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dateKeyInParis, masteryPercent, pointsFor, recordSession, updateStreak, HISTORY_LIMIT } from './progress'
-import { emptyProfile } from './types'
+import { emptyProgress } from './types'
 
 describe('streak sur jours calendaires Europe/Paris', () => {
   it('le même jour ne change rien', () => {
@@ -30,7 +30,7 @@ describe('points et historique', () => {
   })
 
   it('recordSession cumule points, met à jour le streak et garde 10 sessions max', () => {
-    let profile = emptyProfile()
+    let profile = emptyProgress()
     for (let i = 0; i < 12; i++) {
       profile = recordSession(profile, {
         date: new Date(2025, 0, i + 1, 12).toISOString(),

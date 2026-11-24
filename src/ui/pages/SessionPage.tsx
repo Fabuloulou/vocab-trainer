@@ -4,17 +4,18 @@ import { checkAnswer, fieldVerdicts } from '../../domain/checkAnswer'
 import { applyResultToState, pointsFor, recordSession } from '../../domain/progress'
 import type { Exercise } from '../../domain/sessionEngine'
 import { createRunner, runnerReducer, type RunnerPhase } from '../../domain/sessionRunner'
-import type { SessionMode } from '../../domain/types'
+import type { DifficultyLevel, SessionMode } from '../../domain/types'
 import { useApp } from '../state/AppContext'
 
 interface SessionLocationState {
   exercises: Exercise[]
   mode: SessionMode
   label: string
+  level?: DifficultyLevel
 }
 
 export default function SessionPage() {
-  const { update } = useApp()
+  const { updateActive } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const session = (location.state ?? null) as SessionLocationState | null
@@ -29,7 +30,8 @@ export default function SessionPage() {
   )
   const [goodStreak, setGoodStreak] = useState(0)
   const [shake, setShake] = useState(false)
-  const [typingInputs, setTypingInputs] = useState<string[]>([])
+  const [typingInputs, setTypingInputs] = useState<string[]>(() => exercises[0]?.expected.map(() => '') ?? [])
+  const [typingIndex, setTypingIndex] = useState(runner.index)
   const finishCalledRef = useRef(false)
   const answerLockRef = useRef(false)
 
@@ -40,12 +42,13 @@ export default function SessionPage() {
   const exercise = exercises[runner.index]
 
   useEffect(() => {
-    if (!session) navigate('/', { replace: true })
+    if (!session) navigate('/accueil', { replace: true })
   }, [session, navigate])
 
-  useEffect(() => {
+  if (typingIndex !== runner.index) {
+    setTypingIndex(runner.index)
     setTypingInputs(exercise ? exercise.expected.map(() => '') : [])
-  }, [runner.index, exercise])
+  }
 
   useEffect(() => {
     if (mode !== 'challenge' || runner.finished) return
@@ -58,9 +61,9 @@ export default function SessionPage() {
     finishCalledRef.current = true
     const score = runner.results.filter(Boolean).length
     const pointsEarned = runner.results.reduce((acc, ok) => acc + pointsFor(ok, mode), 0)
-    update((s) => ({
-      ...s,
-      profile: recordSession(s.profile, {
+    updateActive((p) => ({
+      ...p,
+      progress: recordSession(p.progress, {
         date: new Date().toISOString(),
         mode,
         score,
@@ -69,10 +72,10 @@ export default function SessionPage() {
       }),
     }))
     navigate('/resultats', {
-      state: { score, total: runner.results.length, pointsEarned, mode, label: session?.label ?? '' },
+      state: { score, total: runner.results.length, pointsEarned, mode, label: session?.label ?? '', mistakes: runner.mistakes },
       replace: true,
     })
-  }, [runner.finished, runner.results, mode, exercises.length, update, navigate, session?.label])
+  }, [runner.finished, runner.results, runner.mistakes, mode, exercises.length, updateActive, navigate, session?.label])
 
   if (!session || !exercise) return null
 
@@ -82,7 +85,7 @@ export default function SessionPage() {
       setShake(true)
       setTimeout(() => setShake(false), 450)
     }
-    update((s) => applyResultToState(s, exercise.itemId, ok, new Date().toISOString()))
+    updateActive((p) => applyResultToState(p, exercise.itemId, ok, new Date().toISOString()))
   }
 
   const tryAnswer = (expectedPhase: RunnerPhase, fn: () => void) => {
@@ -95,6 +98,12 @@ export default function SessionPage() {
     tryAnswer('revealed', () => {
       record(ok)
       dispatch({ type: 'answer', ok })
+    })
+
+  const onDontKnow = () =>
+    tryAnswer('ask', () => {
+      record(false)
+      dispatch({ type: 'dont-know' })
     })
 
   const onQcm = (choice: string) =>
@@ -133,7 +142,20 @@ export default function SessionPage() {
       <div className="exercise-prompt" data-testid="exercise-prompt">{exercise.prompt}</div>
 
       {exercise.kind === 'flashcard' && runner.phase === 'ask' && (
-        <button className="btn" data-testid="btn-reveal" onClick={() => dispatch({ type: 'reveal' })}>Voir la réponse</button>
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button className="btn" data-testid="btn-reveal" onClick={() => dispatch({ type: 'reveal' })}>Voir la réponse</button>
+          <button className="btn danger" data-testid="btn-dont-know" onClick={onDontKnow}>✘ Je ne sais pas</button>
+        </div>
+      )}
+
+      {exercise.kind === 'flashcard' && runner.phase === 'feedback' && !runner.finished && runner.verdict && (
+        <div>
+          <p className="feedback ko" data-testid="feedback-ko">✘ Je ne savais pas.</p>
+          <p className="exercise-expected" data-testid="expected-answers">
+            Réponse attendue : <strong data-testid="expected-value-0">{runner.verdict.expected[0]}</strong>
+          </p>
+          <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
+        </div>
       )}
 
       {exercise.kind === 'flashcard' && runner.phase === 'revealed' && (

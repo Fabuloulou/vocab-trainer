@@ -51,7 +51,7 @@ Une web app responsive (PC, tablette, téléphone), en français, ludique et mot
   - Profil de progression : points, streak (date du dernier entraînement, compteur), historique des sessions (10 dernières conservées).
 - **Import** : deux entrées (upload CSV, copier-coller) vers le même parseur : `;`, UTF-8, en-tête obligatoire. Vocab : `fr;trad;liste`. Verbes : `infinitive;preterite;past_participle;fr;liste`. Aperçu tabulaire avec lignes en erreur signalées avant validation ; import cumulatif possible.
 - **Export** : génération CSV au même format, par liste ou par sous-liste, téléchargé via blob.
-- **Moteur de session** : sélection des sous-listes (multi-coche) ou "mots faibles" (boîtes 1-2). Tirage priorisant les boîtes basses, puis aléatoire. Répartition aléatoire des mécanismes (flashcard, QCM avec distracteurs issus de la même liste, saisie). Direction mélangée pour le vocabulaire ; pour les verbes, un champ sur quatre donné au hasard, les trois autres demandés. Un item ne peux pas être interrogé deux fois dans la même session.
+- **Moteur de session** : sélection des sous-listes (multi-coche) ou "mots faibles" (boîtes 1-2). Tirage priorisant les boîtes basses, puis aléatoire. Répartition aléatoire des mécanismes (flashcard, QCM avec distracteurs issus de la même liste, saisie). Direction **alternée** pour le vocabulaire (FR→langue puis langue→FR, jamais deux prompts de vocabulaire de suite dans la même langue, départ aléatoire ; le compteur est dédié aux exercices de vocabulaire, les verbes intercalés ne le décalent pas) ; pour les verbes, un champ sur quatre donné au hasard, les trois autres demandés. Un item ne peux pas être interrogé deux fois dans la même session.
 - **Correction** : normalisation insensible à la casse, stricte sur les diacritiques/umlauts ; tolérance micro-typo à évaluer (le "gross/groß" reste faux). Affichage de la réponse attendue en cas d'erreur.
 - **UI** : design responsive mobile-first, en français. Écrans : Accueil (streak, maîtrise, lancement rapide), Listes (gestion, import/export, sous-listes), Session d'entraînement, Résultats, Stats. Ton ludique : couleurs franches, feedback visuel immédiat (confettis sur série, secousse sur erreur).
 - **Évolution comptes** : la couche repository et le routing de l'app laissent la place à une authentification et un backend sans restructuration majeure.
@@ -83,48 +83,53 @@ Les tests visent le comportement externe aux coutures principales :
 - Les distracteurs du QCM proviennent des autres mots de la même liste pour rester plausibles.
 - Le mode défi chronométré réutilise le même moteur de session avec un chrono et un scoring bonifié.
 
-## Itération suivante
+## Itérations livrées
 
-Instructions pour le développement de la prochaine itération :
+- **Itération 2** (v0.1.x, livrée) :
+  1. mode verbes irréguliers toujours depuis l'infinitif (jamais prétérit/PP en prompt) ;
+  2. affichage côte à côte de la saisie erronée et de la réponse attendue en cas d'erreur ;
+  3. sélection des sous-listes groupée par liste, case « tout cocher » par liste, libellés non ambigus.
+  Ces trois points sont décrits dans le README (« Fonctionnement »).
 
-### 1. Mode verbes irréguliers : toujours partir de l'infinitif
+## Itération en cours (v0.2.0) : gestion des profils
 
-- Dans le mode verbes irréguliers (`verbs-en`), le **point de départ du prompt est toujours l'infinitif** : soit l'infinitif anglais, soit l'infinitif français (tiré au hasard). **Ne jamais commencer un prompt avec le prétérit ou le past participle.**
-- Le prétérit et le past participle **restent bien interrogés** : partant de l'infinitif donné, l'exercice peut demander de saisir le prétérit, le past participle, la traduction, ou une combinaison de ces formes (le nombre exact de champs demandés peut suivre la logique souhaitée, l'essentiel est que l'infinitif soit toujours le champ donné, jamais le prétérit ni le PP).
-- La user story 16 devient donc : « pour un verbe irrégulier, je veux qu'on me propose l'infinitif (EN ou FR au hasard) et que je saisisse le ou les autres champs (prétérit, past participle, traduction), afin de produire les formes utiles en contrôle sans jamais partir du prétérit ou du PP ».
-- Mettre à jour en conséquence le moteur de session, la correction et les tests de la couture 2 (règle : champ donné = infinitif, jamais prétérit/PP).
+Instructions pour le développement de l'itération gestion des profils :
 
-### 2. Affichage des erreurs : saisie erronée + correction
-
-- En cas d'erreur, l'écran de correction doit afficher **côte à côte la saisie erronée de l'utilisateur et la réponse attendue**, par exemple : « Tu as saisi : *become* → Réponse attendue : *become* » avec la saisie erronée barrée ou mise en évidence.
-- Objectif : permettre de comprendre immédiatement la nature de l'erreur (faute d'orthographe, accent manquant, mauvais mot) sans chercher ni se demander ce qui était attendu.
-- Cela complète la user story 18 : voir la bonne réponse ne suffit plus, il faut voir aussi sa propre erreur. Concerne tous les exercices avec saisie (vocabulaire et verbes).
-
-### 3. Clarification de la sélection des sous-listes
-
-Constat utilisateur (capture d'écran) : sur l'écran « Lancer un entraînement », les libellés de cases à cocher du type « Liste 1 : be > bring · Liste 1 : be > bring (10 mots) » sont incompréhensibles, car le nom de la sous-liste est identique au nom de sa liste parente, et le libellé actuel concatène simplement `nom de liste · nom de sous-liste`.
-
-Clarification du fonctionnement actuel (à documenter et à améliorer) :
-
-- Une **liste** (thème, ex. les verbes irréguliers) contient des **sous-listes** correspondant aux leçons, plus une zone « non classés ». Sur l'écran « Lancer un entraînement », chaque case à cocher représente **une sous-liste** (pas une liste) : le premier élément du libellé est le nom de la liste, le second est le nom de la sous-liste.
-- La session pioche uniquement les mots des sous-listes cochées, toutes listes confondues.
-- Améliorations à livrer :
-  - Regrouper visuellement les cases à cocher par liste parente (en-tête de liste, puis ses sous-listes), au lieu d'une liste plate.
-  - Ajouter une case « tout cocher / tout décocher » par liste.
-  - Rendre les libellés non ambigus : ne pas répéter le nom de la liste si la sous-liste porte le même nom, ou forcer des noms de sous-listes distincts et parlants (ex. « Leçon 1 », « Leçon 2 ») à la création ; ne pas réutiliser le nom de la liste comme nom de sous-liste par défaut.
-  - Afficher le type de liste (vocabulaire / verbes) et le nombre de mots, et expliquer en une phrase sous le titre : « Coche une ou plusieurs sous-listes ; l'entraînement piochera uniquement leurs mots ».
-
-### 4. Gestion des profils utilisateurs (multi-profils)
+### Gestion des profils utilisateurs (multi-profils)
 
 Décisions validées pour cette itération :
 
 - **Profils locaux, sans authentification** : chaque utilisateur de la famille = un profil nommé (nom obligatoire + emoji avatar choisi dans une liste, ex. 🦊 🐼 🦉). Création libre en un clic depuis un écran de sélection de profil à l'ouverture ; renommage et suppression possibles depuis cet écran, avec confirmation pour la suppression.
 - **Profils égaux** : pas de rôle parent/enfant, tous les profils peuvent importer, gérer et s'entraîner (un code PIN parental pourra être ajouté plus tard si besoin).
 - **Données isolées par profil** : chaque profil possède ses propres listes, sous-listes, boîtes Leitner, points, streak et historique. Les listes ne sont pas partagées entre profils.
-- **Copie entre profils** : bouton « copier cette liste vers un autre profil » pour éviter les doubles imports. La copie concerne uniquement le contenu (mots, sous-listes) ; la progression Leitner et les stats ne sont jamais copiées (mots démarrés en boîte 1 côté destinataire).
+- **Copie entre profils** : bouton « copier cette liste vers un autre profil » pour éviter les doubles imports. La copie concerne uniquement le contenu (mots, sous-listes) ; la progression Leitner et les stats ne sont jamais copiées (mots démarrés en boîte 1 côté destinataire). La copie n'est **pas** une liste d'exemple (`isExample: false`) : elle n'est donc pas supprimée par « Supprimer les 3 listes d'exemple » du profil destinataire.
 - **Migration automatique** : au premier lancement après mise à jour, les données existantes (schéma v1 mono-utilisateur) migrent automatiquement dans un premier profil créé à la volée (nommé « Moi », renommable), sans perte de listes, boîtes, points, streak ni historique.
 - **Listes d'exemple** : chaque nouveau profil démarre avec les 3 listes d'exemple (vocab EN, vocab DE, verbes irréguliers EN), supprimables.
 - **Changement de profil** : bouton « changer de profil » permanent ; interdit en pleine session d'entraînement (finir ou abandonner la session d'abord). Pas de session simultanée multi-profils.
 - **Persistance** : schéma localStorage v2 versionné : un objet global contenant le tableau des profils (nom, emoji, données complètes) et le profil actif. Migration v1 → v2 dans la couche repository, qui reste isolée pour un futur backend.
 - **Portée des tests** : mettre à jour la couture 4 (persistance repository) : migration v1 → v2 sans perte, isolation stricte des données entre profils, suppression de profil, copie de liste inter-profil (contenu seul, progression vierge).
 - **Hors périmètre de cette itération** : synchronisation multi-appareils, comptes en ligne, authentification, backend. L'export CSV reste le pont entre appareils. Le futur backend (RPi/containers) réutilisera le modèle « utilisateurs + données par utilisateur » défini ici, via la couche repository existante.
+
+### Niveaux de difficulté pour le vocabulaire (FR→EN / FR→DE)
+
+Ajustement demandé pour la v0.2.0 : au lieu d'un mélange aléatoire des mécanismes, l'utilisateur choisit un **niveau de difficulté** au lancement de la session (sélection de sous-listes ou « Mes mots faibles ») :
+
+- **Niveau 1 — « Je ne sais pas »** : flashcards. Un bouton « Je ne sais pas » compte l'exercice comme un échec et affiche la réponse attendue ; « Voir la réponse » puis l'auto-évaluation « J'avais bon / J'avais faux » restent disponibles.
+- **Niveau 2 — QCM** : 4 choix contenant la bonne réponse, distracteurs issus de la même liste (retombe en saisie si la liste ne contient qu'un seul mot).
+- **Niveau 3 — Saisie écrite** : la traduction est à taper au clavier.
+
+Règles :
+
+- Le niveau s'applique au vocabulaire anglais (`vocab-en`) et allemand (`vocab-de`). Les prompts **alternent entre le français et la langue étrangère** (FR→langue, puis langue→FR, etc. — jamais deux prompts de vocabulaire consécutifs dans la même langue ; les verbes intercalés ne comptent pas dans l'alternance), la direction de départ étant tirée au hasard.
+- Les **verbes irréguliers restent toujours en saisie** (équivalent niveau 3), quel que soit le niveau choisi : le prompt part toujours de l'infinitif (EN ou FR au hasard), les 3 autres champs sont à saisir.
+- Quand un niveau est choisi, le mécanisme n'est plus tiré au hasard ; sans niveau explicite (appels internes du moteur), le mélange aléatoire flashcard/QCM/saisie reste le comportement par défaut.
+- Mise à jour en conséquence du moteur de session (`buildSession` accepte `level`), du runner (action « dont-know » pour le niveau 1) et des tests de la couture 2.
+
+### Récapitulatif des erreurs en fin de session
+
+Ajustement demandé pour la v0.2.0 :
+
+- À la fin de **chaque session**, l'écran Résultats affiche un **récapitulatif des erreurs** : pour chaque exercice raté, le prompt, la saisie de l'utilisateur (barrée) et la réponse attendue — champ par champ pour les verbes (prétérit, participe passé, traduction).
+- « Je ne sais pas » (niveau 1) et « J'avais faux » (flashcard) comptent comme des erreurs et figurent au récapitulatif ; les bonnes réponses non.
+- Les erreurs sont collectées par le runner (`mistakes` dans l'état du runner : itemId, prompt, labels, attendues, saisie) et transmises à la page Résultats via l'état de navigation.
+- Si la session ne comporte aucune erreur, le récapitulatif n'est pas affiché.

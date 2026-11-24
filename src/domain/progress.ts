@@ -1,5 +1,5 @@
 import { onFailure, onSuccess, initialLeitner } from './leitner'
-import type { AppState, LeitnerState, Profile, SessionMode, SessionRecord, Streak } from './types'
+import type { LeitnerState, Progress, SessionMode, SessionRecord, Streak, WordList } from './types'
 
 export const PARIS_TZ = 'Europe/Paris'
 
@@ -46,10 +46,10 @@ export function applyItemResult(
 }
 
 export function recordSession(
-  profile: Profile,
+  profile: Progress,
   record: Omit<SessionRecord, 'id'>,
   now: Date = new Date(),
-): Profile {
+): Progress {
   const today = dateKeyInParis(now)
   const full: SessionRecord = { ...record, id: `s-${now.getTime()}-${Math.floor(Math.random() * 1e6)}` }
   return {
@@ -66,17 +66,17 @@ export function masteryPercent(list: { items: Record<string, unknown>; unclassif
   return Math.round((total / (ids.length * 3)) * 100)
 }
 
-export function globalMastery(state: AppState): number {
+export function globalMastery(state: { lists: WordList[]; leitner: Record<string, LeitnerState> }): number {
   const all = state.lists.flatMap((l) => masteryPercent(l, state.leitner))
   if (state.lists.length === 0) return 0
   return Math.round(all.reduce((a, b) => a + b, 0) / state.lists.length)
 }
 
-export function applyResultToState(
-  state: AppState,
+export function applyResultToState<T extends { leitner: Record<string, LeitnerState> }>(
+  state: T,
   itemId: string,
   success: boolean,
   now: string,
-): AppState {
+): T {
   return { ...state, leitner: applyItemResult(state.leitner, itemId, success, now) }
 }
