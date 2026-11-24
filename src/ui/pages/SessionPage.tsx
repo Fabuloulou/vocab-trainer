@@ -30,7 +30,7 @@ export default function SessionPage() {
   )
   const [goodStreak, setGoodStreak] = useState(0)
   const [shake, setShake] = useState(false)
-  const [typingInputs, setTypingInputs] = useState<string[]>([])
+  const [typingInputs, setTypingInputs] = useState<string[]>(() => exercises[0]?.expected.map(() => '') ?? [])
   const [typingIndex, setTypingIndex] = useState(runner.index)
   const finishCalledRef = useRef(false)
   const answerLockRef = useRef(false)
