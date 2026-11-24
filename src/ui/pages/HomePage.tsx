@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { hasWeakItems } from '../../domain/leitner'
 import { buildSession, type SelectedSubList } from '../../domain/sessionEngine'
-import { UNCLASSIFIED_ID, type SessionMode } from '../../domain/types'
+import { DIFFICULTY_LEVELS, UNCLASSIFIED_ID, type DifficultyLevel, type SessionMode } from '../../domain/types'
 import { globalMastery } from '../../domain/progress'
 import { useApp } from '../state/AppContext'
 import { TYPE_BADGES } from '../listTypeLabels'
@@ -15,11 +15,18 @@ interface SelectableRow {
   count: number
 }
 
+const LEVEL_LABELS: Record<DifficultyLevel, string> = {
+  1: 'Niveau 1 — « Je ne sais pas » (flashcard)',
+  2: 'Niveau 2 — QCM (4 choix)',
+  3: 'Niveau 3 — Saisie écrite',
+}
+
 export default function HomePage() {
   const { activeProfile } = useApp()
   const navigate = useNavigate()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [challenge, setChallenge] = useState(false)
+  const [level, setLevel] = useState<DifficultyLevel>(1)
 
   const groups = useMemo(() => {
     if (!activeProfile) return []
@@ -78,11 +85,12 @@ export default function HomePage() {
       selection,
       leitner: activeProfile.leitner,
       weakOnly: weak,
+      level,
       rng: Math.random,
     })
     if (exercises.length === 0) return
     const label = weak ? 'Mes mots faibles' : selection.map((s) => s.subListId).join(',')
-    navigate('/session', { state: { exercises, mode, label } })
+    navigate('/session', { state: { exercises, mode, label, level } })
   }
 
   const startSelected = () => {
@@ -158,6 +166,22 @@ export default function HomePage() {
                 </fieldset>
               )
             })}
+            <div className="level-picker" role="radiogroup" aria-label="Niveau de difficulté" data-testid="level-picker">
+              <span className="muted">Niveau de difficulté (vocabulaire FR→EN / FR→DE) :</span>
+              {DIFFICULTY_LEVELS.map((lv) => (
+                <label className="check-row" key={lv}>
+                  <input
+                    type="radio"
+                    name="difficulty-level"
+                    data-testid={`level-${lv}`}
+                    checked={level === lv}
+                    onChange={() => setLevel(lv)}
+                  />
+                  <span>{LEVEL_LABELS[lv]}</span>
+                </label>
+              ))}
+              <span className="muted">Les verbes irréguliers se répondent toujours à l'écrit.</span>
+            </div>
             <div className="btn-row" style={{ marginTop: '0.8rem' }}>
               <button className="btn" data-testid="start-session" onClick={startSelected} disabled={selected.size === 0}>
                 ▶ Lancer la session

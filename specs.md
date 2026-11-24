@@ -109,3 +109,18 @@ Décisions validées pour cette itération :
 - **Persistance** : schéma localStorage v2 versionné : un objet global contenant le tableau des profils (nom, emoji, données complètes) et le profil actif. Migration v1 → v2 dans la couche repository, qui reste isolée pour un futur backend.
 - **Portée des tests** : mettre à jour la couture 4 (persistance repository) : migration v1 → v2 sans perte, isolation stricte des données entre profils, suppression de profil, copie de liste inter-profil (contenu seul, progression vierge).
 - **Hors périmètre de cette itération** : synchronisation multi-appareils, comptes en ligne, authentification, backend. L'export CSV reste le pont entre appareils. Le futur backend (RPi/containers) réutilisera le modèle « utilisateurs + données par utilisateur » défini ici, via la couche repository existante.
+
+### Niveaux de difficulté pour le vocabulaire (FR→EN / FR→DE)
+
+Ajustement demandé pour la v0.2.0 : au lieu d'un mélange aléatoire des mécanismes, l'utilisateur choisit un **niveau de difficulté** au lancement de la session (sélection de sous-listes ou « Mes mots faibles ») :
+
+- **Niveau 1 — « Je ne sais pas »** : flashcards. Un bouton « Je ne sais pas » compte l'exercice comme un échec et affiche la réponse attendue ; « Voir la réponse » puis l'auto-évaluation « J'avais bon / J'avais faux » restent disponibles.
+- **Niveau 2 — QCM** : 4 choix contenant la bonne réponse, distracteurs issus de la même liste (retombe en saisie si la liste ne contient qu'un seul mot).
+- **Niveau 3 — Saisie écrite** : la traduction est à taper au clavier.
+
+Règles :
+
+- Le niveau s'applique au vocabulaire anglais (`vocab-en`) et allemand (`vocab-de`), interrogé dans les deux directions (FR→langue et langue→FR mélangées comme avant).
+- Les **verbes irréguliers restent toujours en saisie** (équivalent niveau 3), quel que soit le niveau choisi : le prompt part toujours de l'infinitif (EN ou FR au hasard), les 3 autres champs sont à saisir.
+- Quand un niveau est choisi, le mécanisme n'est plus tiré au hasard ; sans niveau explicite (appels internes du moteur), le mélange aléatoire flashcard/QCM/saisie reste le comportement par défaut.
+- Mise à jour en conséquence du moteur de session (`buildSession` accepte `level`), du runner (action « dont-know » pour le niveau 1) et des tests de la couture 2.

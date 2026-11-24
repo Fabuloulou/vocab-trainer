@@ -30,6 +30,7 @@ test('flux complet : importer, lancer une session, répondre, voir les résultat
   const group = page.locator('[data-testid^="list-group-"]').first()
   await group.getByTestId(/^toggle-all-/).check()
   expect(await page.locator('[data-testid^="select-sublist-"]:checked').count()).toBeGreaterThan(0)
+  await page.getByTestId('level-3').check()
   await page.getByTestId('start-session').click()
   await expect(page.getByTestId('exercise-card')).toBeVisible()
   await expect(page.getByTestId('nav-profiles')).toHaveCount(0)
@@ -115,6 +116,7 @@ test('double clic rapide sur un QCM applique la progression Leitner une seule fo
 
   await page.getByTestId('nav-home').click()
   await page.locator('[data-testid^="select-sublist-"]').first().check()
+  await page.getByTestId('level-2').check()
   await page.getByTestId('start-session').click()
 
   for (let i = 0; i < 20; i++) {
@@ -222,6 +224,19 @@ test('suppression d’un profil après confirmation', async ({ page }) => {
   page.once('dialog', (d) => d.accept())
   await page.locator('[data-testid^="delete-profile-"]').nth(1).click()
   await expect(page.locator('[data-testid^="profile-card-"]')).toHaveCount(1)
+})
+
+test('niveau 1 (défaut) : « Je ne sais pas » affiche la réponse attendue et compte comme faux', async ({ page }) => {
+  await expect(page.getByTestId('level-1')).toBeChecked()
+  await expect(page.getByTestId('start-weak')).toBeEnabled()
+  await page.getByTestId('start-weak').click()
+  await expect(page.getByTestId('exercise-card')).toBeVisible()
+  await expect(page.getByTestId('btn-dont-know')).toBeVisible()
+  await page.getByTestId('btn-dont-know').click()
+  await expect(page.getByTestId('feedback-ko')).toBeVisible()
+  await expect(page.getByTestId('expected-answers')).toContainText('Réponse attendue')
+  await page.getByTestId('btn-next').click()
+  await expect(page.getByTestId('exercise-card')).toBeVisible()
 })
 
 test('migration v1 → v2 : les données existantes partent dans le profil « Moi » sans perte', async ({ page }) => {

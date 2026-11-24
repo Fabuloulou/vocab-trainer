@@ -91,6 +91,35 @@ describe('sessionRunner', () => {
     expect(f.finished).toBe(true)
   })
 
+  it('dont-know sur une flashcard enregistre un échec et affiche la réponse attendue en feedback', () => {
+    const exs = exercises(2)
+    const flash = [{ ...exs[0], kind: 'flashcard' as const }, exs[1]]
+    let s = createRunner(flash, 'classic')
+    s = runnerReducer(flash, s, { type: 'dont-know' })
+    expect(s.results).toEqual([false])
+    expect(s.phase).toBe('feedback')
+    expect(s.verdict).toEqual({ ok: false, expected: flash[0].expected, input: flash[0].expected.map(() => '') })
+    s = runnerReducer(flash, s, { type: 'dont-know' })
+    expect(s.results).toEqual([false])
+    s = runnerReducer(flash, s, { type: 'next' })
+    expect(s.index).toBe(1)
+    expect(s.phase).toBe('ask')
+  })
+
+  it('dont-know est ignoré hors flashcard ou hors phase ask', () => {
+    const exs = exercises(2)
+    let s = createRunner(exs, 'classic')
+    s = runnerReducer(exs, s, { type: 'dont-know' })
+    expect(s.results).toEqual([])
+    expect(s.phase).toBe('ask')
+    const flash = [{ ...exs[0], kind: 'flashcard' as const }]
+    let f = createRunner(flash, 'classic')
+    f = runnerReducer(flash, f, { type: 'reveal' })
+    f = runnerReducer(flash, f, { type: 'dont-know' })
+    expect(f.results).toEqual([])
+    expect(f.phase).toBe('revealed')
+  })
+
   it('next en phase ask est ignoré', () => {
     const exs = exercises(2)
     let s = createRunner(exs, 'classic')

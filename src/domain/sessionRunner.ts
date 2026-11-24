@@ -15,6 +15,7 @@ export interface RunnerState {
 export type RunnerAction =
   | { type: 'reveal' }
   | { type: 'answer'; ok: boolean }
+  | { type: 'dont-know' }
   | { type: 'submit'; ok: boolean; expected: string[]; input: string[] }
   | { type: 'next' }
   | { type: 'tick' }
@@ -44,6 +45,17 @@ export function runnerReducer(exercises: Exercise[], state: RunnerState, action:
       const results = [...state.results, action.ok]
       if (isLast) return { ...state, results, finished: true }
       return { ...state, results, index: state.index + 1, phase: 'ask', verdict: null }
+    }
+    case 'dont-know': {
+      if (state.phase !== 'ask' || !exercise || exercise.kind !== 'flashcard') return state
+      const results = [...state.results, false]
+      return {
+        ...state,
+        results,
+        verdict: { ok: false, expected: exercise.expected, input: exercise.expected.map(() => '') },
+        phase: 'feedback',
+        finished: isLast,
+      }
     }
     case 'submit': {
       if (state.phase !== 'ask' || !exercise || exercise.kind === 'flashcard') return state

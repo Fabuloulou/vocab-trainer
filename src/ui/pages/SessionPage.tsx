@@ -4,13 +4,14 @@ import { checkAnswer, fieldVerdicts } from '../../domain/checkAnswer'
 import { applyResultToState, pointsFor, recordSession } from '../../domain/progress'
 import type { Exercise } from '../../domain/sessionEngine'
 import { createRunner, runnerReducer, type RunnerPhase } from '../../domain/sessionRunner'
-import type { SessionMode } from '../../domain/types'
+import type { DifficultyLevel, SessionMode } from '../../domain/types'
 import { useApp } from '../state/AppContext'
 
 interface SessionLocationState {
   exercises: Exercise[]
   mode: SessionMode
   label: string
+  level?: DifficultyLevel
 }
 
 export default function SessionPage() {
@@ -97,6 +98,12 @@ export default function SessionPage() {
       dispatch({ type: 'answer', ok })
     })
 
+  const onDontKnow = () =>
+    tryAnswer('ask', () => {
+      record(false)
+      dispatch({ type: 'dont-know' })
+    })
+
   const onQcm = (choice: string) =>
     tryAnswer('ask', () => {
       const ok = checkAnswer(choice, exercise.expected[0])
@@ -133,7 +140,20 @@ export default function SessionPage() {
       <div className="exercise-prompt" data-testid="exercise-prompt">{exercise.prompt}</div>
 
       {exercise.kind === 'flashcard' && runner.phase === 'ask' && (
-        <button className="btn" data-testid="btn-reveal" onClick={() => dispatch({ type: 'reveal' })}>Voir la réponse</button>
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button className="btn" data-testid="btn-reveal" onClick={() => dispatch({ type: 'reveal' })}>Voir la réponse</button>
+          <button className="btn danger" data-testid="btn-dont-know" onClick={onDontKnow}>✘ Je ne sais pas</button>
+        </div>
+      )}
+
+      {exercise.kind === 'flashcard' && runner.phase === 'feedback' && !runner.finished && runner.verdict && (
+        <div>
+          <p className="feedback ko" data-testid="feedback-ko">✘ Je ne savais pas.</p>
+          <p className="exercise-expected" data-testid="expected-answers">
+            Réponse attendue : <strong data-testid="expected-value-0">{runner.verdict.expected[0]}</strong>
+          </p>
+          <button className="btn" data-testid="btn-next" onClick={() => dispatch({ type: 'next' })}>Suivant →</button>
+        </div>
       )}
 
       {exercise.kind === 'flashcard' && runner.phase === 'revealed' && (

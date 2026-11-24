@@ -177,6 +177,43 @@ describe('moteur de session', () => {
     expect(ex.map((e) => e.itemId).sort()).toEqual(['l1-w0', 'l2-w0'])
   })
 
+  it('niveau 1 : tout le vocabulaire est en flashcard (« je ne sais pas »)', () => {
+    const list = makeVocabList('l1', words20)
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 1, rng: mulberry32(1) })
+    expect(ex).toHaveLength(20)
+    expect(ex.every((e) => e.kind === 'flashcard')).toBe(true)
+  })
+
+  it('niveau 2 : tout le vocabulaire est en QCM', () => {
+    const list = makeVocabList('l1', words20)
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 2, rng: mulberry32(1) })
+    expect(ex).toHaveLength(20)
+    expect(ex.every((e) => e.kind === 'qcm' && e.choices !== null)).toBe(true)
+  })
+
+  it('niveau 3 : tout le vocabulaire est en saisie écrite', () => {
+    const list = makeVocabList('l1', words20)
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 3, rng: mulberry32(1) })
+    expect(ex).toHaveLength(20)
+    expect(ex.every((e) => e.kind === 'typing' && e.choices === null)).toBe(true)
+  })
+
+  it('les verbes restent en saisie quel que soit le niveau choisi', () => {
+    const verbs = Array.from({ length: 8 }, (_, i) => [`v${i}`, `p${i}`, `pp${i}`, `fr ${i}`] as [string, string, string, string])
+    const list = makeVerbList('lv', verbs)
+    for (const level of [1, 2, 3] as const) {
+      const ex = buildSession({ lists: [list], selection: [{ listId: 'lv', subListId: 'lv-s1' }], leitner: {}, level, rng: mulberry32(9) })
+      expect(ex.every((e) => e.kind === 'typing')).toBe(true)
+    }
+  })
+
+  it('niveau 2 avec une liste à un seul élément retombe en saisie (pas de distracteur)', () => {
+    const list = makeVocabList('l1', [['seul', 'only']])
+    const ex = buildSession({ lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {}, level: 2, rng: mulberry32(1) })
+    expect(ex[0].kind).toBe('typing')
+    expect(ex[0].choices).toBeNull()
+  })
+
   it('est reproductible avec la même graine de PRNG', () => {
     const list = makeVocabList('l1', words20)
     const opts = { lists: [list], selection: [{ listId: 'l1', subListId: 'l1-s1' }], leitner: {} }

@@ -49,6 +49,10 @@ export interface LeitnerState {
 
 export type SessionMode = 'classic' | 'challenge'
 
+export type DifficultyLevel = 1 | 2 | 3
+
+export const DIFFICULTY_LEVELS: DifficultyLevel[] = [1, 2, 3]
+
 export interface SessionRecord {
   id: string
   date: string

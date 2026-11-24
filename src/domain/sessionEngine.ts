@@ -1,6 +1,6 @@
 import { isWeak } from './leitner'
 import { pick, shuffle, type Rng } from './rng'
-import type { Item, LeitnerState, ListType, VerbItem, VocabItem, WordList } from './types'
+import type { DifficultyLevel, Item, LeitnerState, ListType, VerbItem, VocabItem, WordList } from './types'
 
 export type ExerciseKind = 'flashcard' | 'qcm' | 'typing'
 export type Direction = 'fr-to-target' | 'target-to-fr'
@@ -32,12 +32,15 @@ export interface BuildSessionOptions {
   selection: SelectedSubList[]
   leitner: Record<string, LeitnerState>
   weakOnly?: boolean
+  level?: DifficultyLevel
   rng: Rng
 }
 
 const KINDS: ExerciseKind[] = ['flashcard', 'qcm', 'typing']
 const DIRECTIONS: Direction[] = ['fr-to-target', 'target-to-fr']
 export const QCM_CHOICES = 4
+
+export const LEVEL_KIND: Record<DifficultyLevel, ExerciseKind> = { 1: 'flashcard', 2: 'qcm', 3: 'typing' }
 
 function vocabFields(item: VocabItem, direction: Direction): { prompt: string; answer: string } {
   return direction === 'fr-to-target'
@@ -62,9 +65,10 @@ function buildExercise(
   rng: Rng,
   index: number,
   poolByList: Map<string, Item[]>,
+  level?: DifficultyLevel,
 ): Exercise {
   const isVerb = list.type === 'verbs-en'
-  const kind: ExerciseKind = isVerb ? 'typing' : pick(rng, KINDS)
+  const kind: ExerciseKind = isVerb ? 'typing' : level ? LEVEL_KIND[level] : pick(rng, KINDS)
   const base = { index, itemId: item.id, listId: list.id, listType: list.type, kind }
 
   if (isVerb) {
@@ -138,7 +142,7 @@ export function buildSession(options: BuildSessionOptions): Exercise[] {
     return boxA - boxB
   })
 
-  return ordered.map((p, i) => buildExercise(p.item, p.list, rng, i, poolByList))
+  return ordered.map((p, i) => buildExercise(p.item, p.list, rng, i, poolByList, options.level))
 }
 
 export function challengeSeconds(exerciseCount: number): number {
