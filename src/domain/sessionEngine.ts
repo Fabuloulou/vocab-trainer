@@ -148,17 +148,12 @@ export function buildSession(options: BuildSessionOptions): Exercise[] {
   })
 
   const startDirection = pick(rng, DIRECTIONS)
-  return ordered.map((p, i) =>
-    buildExercise(
-      p.item,
-      p.list,
-      rng,
-      i,
-      poolByList,
-      options.level,
-      p.list.type === 'verbs-en' ? null : i % 2 === 0 ? startDirection : otherDirection(startDirection),
-    ),
-  )
+  let vocabIndex = 0
+  return ordered.map((p, i) => {
+    const isVerb = p.list.type === 'verbs-en'
+    const direction = isVerb ? null : vocabIndex++ % 2 === 0 ? startDirection : otherDirection(startDirection)
+    return buildExercise(p.item, p.list, rng, i, poolByList, options.level, direction)
+  })
 }
 
 export function challengeSeconds(exerciseCount: number): number {

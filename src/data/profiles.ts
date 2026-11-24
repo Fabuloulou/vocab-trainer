@@ -13,6 +13,7 @@ export function copyListContent(list: WordList): WordList {
   return {
     ...list,
     id: newId('list'),
+    isExample: false,
     items,
     subLists: list.subLists.map((sub) => ({
       id: newId('sub'),

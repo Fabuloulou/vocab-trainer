@@ -185,7 +185,7 @@ describe('isolation et copie entre profils (couture 4)', () => {
 
     expect(copy.name).toBe(list.name)
     expect(copy.type).toBe(list.type)
-    expect(copy.isExample).toBe(list.isExample)
+    expect(copy.isExample).toBe(false)
     expect(Object.keys(copy.items)).toHaveLength(Object.keys(list.items).length)
     expect(copy.subLists.map((s) => s.name)).toEqual(list.subLists.map((s) => s.name))
     expect([...copy.subLists.flatMap((s) => s.itemIds), ...copy.unclassifiedItemIds].sort()).toEqual(

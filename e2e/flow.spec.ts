@@ -219,6 +219,7 @@ test('profils : création, sélection, renommage, isolation des données et copi
   const copy = moi.lists[3]
   expect(copy.name).toBe(lucas.lists[0].name)
   expect(copy.id).not.toBe(lucas.lists[0].id)
+  expect(copy.isExample).toBe(false)
   expect(Object.keys(copy.items)).toHaveLength(Object.keys(lucas.lists[0].items).length)
   expect(Object.keys(copy.items)).not.toEqual(expect.arrayContaining(Object.keys(lucas.lists[0].items)))
   expect(Object.keys(moi.leitner ?? {})).toHaveLength(0)

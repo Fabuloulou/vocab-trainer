@@ -70,6 +70,28 @@ describe('moteur de session', () => {
     expect(starts.size).toBe(2)
   })
 
+  it('l alternance ne compte que les exercices de vocabulaire (les verbes intercalés ne décalent pas)', () => {
+    const vocab = makeVocabList('l1', words20)
+    const verbs = Array.from({ length: 10 }, (_, i) => [`v${i}`, `p${i}`, `pp${i}`, `fr ${i}`] as [string, string, string, string])
+    const verbList = makeVerbList('lv', verbs)
+    const ex = buildSession({
+      lists: [vocab, verbList],
+      selection: [
+        { listId: 'l1', subListId: 'l1-s1' },
+        { listId: 'lv', subListId: 'lv-s1' },
+      ],
+      leitner: {},
+      rng: mulberry32(17),
+    })
+    expect(ex.some((e) => e.listType === 'verbs-en')).toBe(true)
+    const dirs = ex.filter((e) => e.listType !== 'verbs-en').map((e) => e.direction as string)
+    expect(dirs.length).toBe(20)
+    expect(new Set(dirs).size).toBe(2)
+    for (let i = 1; i < dirs.length; i++) {
+      expect(dirs[i]).not.toBe(dirs[i - 1])
+    }
+  })
+
   it('l alternance de directions s applique aussi quand un niveau est choisi', () => {
     const list = makeVocabList('l1', words20)
     for (const level of [1, 2, 3] as const) {
